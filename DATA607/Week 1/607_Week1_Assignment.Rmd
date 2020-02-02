@@ -1,0 +1,53 @@
+---
+title: "Basic Loading and Transformation"
+author: "Gabe Abreu"
+date: "2/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+The article where this data set originates from concentrates on baby boomers and their overall drug use. 
+
+Original article: https://fivethirtyeight.com/features/how-baby-boomers-get-high/
+
+I wish to investigate the marijuana and alcohol usage of young adults (early 20s) until mid-30s. 
+
+```{r Drug Use By Age}
+#Retrieve Original Data
+
+DrugUse <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/drug-use-by-age/drug-use-by-age.csv"
+
+DrugData <- read.csv(DrugUse)
+
+#Subset of data concentrating on early 20s through mid-30s and those who use alcohol and marijuana
+SubDD <- DrugData[c(9:14), c(1 ,3:6)]
+
+#Change column names
+setnames(SubDD, old = c("age", "alcohol.use", "alcohol.frequency", "marijuana.use","marijuana.frequency"), new = c("Age Groups", "Percent(ETOH Users)", "Times Used(ETOH)", "Percent(MJ Users)", "Times Used(MJ)"))
+
+#Provide summary of subset data
+summary(SubDD)
+```
+
+## Including Graphs
+
+You can also embed plots, for example:
+###Bar Graph
+```{r graphs, echo=FALSE}
+SubDD1 <- SubDD[ , c(2,4)]
+data2 <- data.frame(SubDD1)
+
+barplot(as.matrix(data2), main="Alchol vs Marijuana",ylab="Percentage of Users", beside=TRUE,col=rainbow (5), cex.names = 0.5)
+legend ("topright",c("20yr", "21yr", "22-23yr","24-25yr", "26-29yr", "30-34yr"),cex=.75,bty="n",fill=rainbow (17))
+```
+###Histogram Graph
+```{r histogram}
+hist(SubDD$`Times Used(ETOH)`)
+hist(SubDD$`Times Used(MJ)`)
+````
+##Conclusion
+There is a significantly larger percentage of alcohol users than marijuana users. However, the frequency of marijuana use is on par or greater than alcohol. Suggesting those who do use marijuana use it and like it more than those who use alcohol.
