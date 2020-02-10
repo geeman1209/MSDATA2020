@@ -1,0 +1,14 @@
+USE Movies;
+
+CREATE TABLE ratings (
+    id INT NOT NULL AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    resp1 VARCHAR(255) NULL,
+    resp2 VARCHAR(255) NULL,
+    resp3 VARCHAR(255) NULL,
+    resp4 VARCHAR(255) NULL,
+    resp5 VARCHAR(255) NULL,
+    resp6 VARCHAR(255) NULL,
+    resp7 VARCHAR(255) NULL,
+    PRIMARY KEY (id)
+);

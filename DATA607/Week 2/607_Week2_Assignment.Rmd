@@ -1,0 +1,100 @@
+---
+title: "SQL And R - Week 2"
+author: "Gabe Abreu"
+date: "2/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RMySQL)
+library(ggplot2)
+library(data.table)
+library(plyr)
+library(dplyr)
+library(DBI)
+```
+
+## SQL and R
+
+The purpose of this assignment is to conduct a survey and input the results of the survey into a database then use R to query and retrieve the data from within the database. I used a MySQl Database instance created within Google Cloud. 
+
+The survey software used was "SoGoSurvey" an online application that is similar to RedCap. It was easy to create the survey, a mailing list, choose deployment method, and track the survey. The respondents were asked to rate the movies from a scale of 1 to 5 (1 being the lowest and 5 the highest). I exported the results as a .csv file and imported into a table within the database using MySQL Workbench.
+
+The table was created using SQL code.
+
+## Protecting password and username
+
+The public host ip of the cloud database is included in the code but the user and password is not. Anyone wishing to access the database will need to know both the user and password as my code prompts for these fields.
+
+```{r movies}
+mysqlconnection = dbConnect(MySQL(), user = rstudioapi::askForPassword("Database user"), password = rstudioapi::askForPassword("Database password"), dbname = 'Movies',host = '35.224.237.100')
+
+dbListTables(mysqlconnection)
+
+result = dbSendQuery(mysqlconnection, "select * from ratings")
+
+RatingsData = fetch(result)
+print(RatingsData)
+
+
+#Check what values are numeric
+RatingSub <- unlist(lapply(RatingsData, is.numeric))
+
+#Majority of my columns are characters not numeric
+#need to convert character types to numeric for calculations
+
+NumResp1 <- as.numeric(RatingsData$resp1)
+NumResp2 <- as.numeric(RatingsData$resp2)
+NumResp3 <- as.numeric(RatingsData$resp3)
+NumResp4 <- as.numeric(RatingsData$resp4)
+NumResp5 <- as.numeric(RatingsData$resp5)
+NumResp6 <- as.numeric(RatingsData$resp6)
+NumResp7 <- as.numeric(RatingsData$resp7)
+
+#New Data Frame
+
+NumericDF <- data_frame(RatingsData[,1:2])
+
+df <- data.frame(matrix(unlist(NumResp1), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df2 <- data.frame(matrix(unlist(NumResp2), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df3 <- data.frame(matrix(unlist(NumResp3), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df4 <- data.frame(matrix(unlist(NumResp4), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df5 <- data.frame(matrix(unlist(NumResp5), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df6 <- data.frame(matrix(unlist(NumResp6), nrow=10, byrow=T),stringsAsFactors=FALSE)
+df7 <- data.frame(matrix(unlist(NumResp7), nrow=10, byrow=T),stringsAsFactors=FALSE)
+
+NumericDF$resp1 <- df
+NumericDF$resp2 <- df2
+NumericDF$resp3 <- df3
+NumericDF$resp4 <- df4
+NumericDF$resp5 <- df5
+NumericDF$resp6 <- df6
+NumericDF$resp7 <- df7
+
+#Utilize the na.rm=TRUE to ignore NA values
+Movie_Rate_Average <- rowMeans(NumericDF[,2:8], na.rm= TRUE)
+print(Movie_Rate_Average)
+Rating_Avg_User <- colMeans(NumericDF[,2:8], na.rm=TRUE)
+print(Rating_Avg_User)
+
+```
+
+## Graphs
+
+I used two independent bar plots to show the average rating given to each movie and secondly, the average rating given by each user:
+
+```{r Bar Plot, echo=TRUE}
+barplot(as.matrix(Movie_Rate_Average), names.arg = (c("Avengers", "ToyStory4", "Frozen II","Captain Marvel", "Dolemite", "Knives Out", "US", "John Wick", "Shazam", "Spider-Man")), main="Rating Avg Per Movie", xlab="Movies", ylab="Rating", ylim = c(0,5), beside=TRUE,col=rainbow (10), cex.names = 0.5)
+legend ("topright",c("Avengers End Game", "Toy Story 4", "Frozen II","Captain Marvel", "Dolemite", "Knives Out", "US", "John Wick", "Shazam", "Spider-Man"),cex=.5,bty="y",fill=rainbow (10))
+
+barplot(as.matrix(Rating_Avg_User), names.arg = (c("Responder1", "Responder2", "Responder3","Responder4", "Responder5", "Responder6", "Responder7")), main="Avg rating given by User", xlab="User", ylab="Rating", ylim = c(0,5), beside=TRUE,col=rainbow (7), cex.names = 0.5)
+legend ("topright",c("Resp1", "Resp2", "Resp3","Resp4", "Resp5", "Resp6", "Resp7"),cex=.5,bty="y",fill=rainbow (7))
+```
+
+```{r histogram, echo=TRUE}
+hist(unlist(NumericDF[2:8]), main = "Histogram of Ratings", col="gray", labels = TRUE, xlab = "Ratings", ylim = c(0,20))
+````
+## Conclusion
+
+The data shows a clear preferance towards action movies and none of the respondents saw the movie "Knives Out". The biggest hurdle with this assignment was dealing with the original data being non-numeric. The table "ratings" was created with varchar unit types which made exporting the data and making calculations difficult.  So, the approach I took was make the non-numeric characters -> numeric and create a new data frame that allows me to play with the data. 
