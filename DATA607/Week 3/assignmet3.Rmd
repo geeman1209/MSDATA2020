@@ -1,0 +1,102 @@
+---
+title: 'Assignment #3'
+author: "Gabe Abreu"
+date: "2/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(glue)
+library(stringr)
+library(data.table)
+library(plyr)
+library(dplyr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment 3
+
+### Question 1
+Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+
+```{r majors}
+
+major_list <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv"
+
+Majors <- read.csv(major_list)
+
+data_majors <- as_data_frame(Majors)
+
+SelectedMajors <- data_majors$Major[grep("DATA|STATISTICS", data_majors$Major)]
+
+View(SelectedMajors)
+
+Majors %>% filter(str_detect(Major, ("DATA|STATISTICS")))
+
+```
+### Question 2
+#2 Write code that transforms the data below:
+
+[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"
+
+Into a format like this:
+
+c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry"
+
+````{r}
+fruits <- c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+dput(as.character(fruits))
+
+`````
+
+### Question 3
+ Describe, in words, what these expressions will match:
+
+(.)\1\1
+Answer: same character appears 3 times in a row
+
+"(.)(.)\\2\\1"
+Answer: 2 characters attached to the same 2 characters in reverse order
+
+(..)\1
+Answer:Any 2 characters repeated
+
+"(.).\\1.\\1"
+Answer:1 character repeated three times with a different character in between every original character occurrence "rtrsr"
+
+"(.)(.)(.).*\\3\\2\\1"
+Answer:3 characters followed by zero or more characters followed by the original 3 characters in reverse order.
+
+### Question 4
+Construct regular expressions to match words that:
+
+Start and end with the same character.
+Regular Expression: "^(.)((.*\\1$)|\\1?$)"
+
+Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.)
+Regular Expression: "[A-Za-z][A-Za-z]).*\\1"
+
+Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
+Regular Expression:"([a-z].*\\1.*\\1")
+
+```{r test}
+rando_words <- c("bell","apple","dog","eye","bob","test","mom","sense","church","banana","pepperoni","red","green","England","eleven","ten","twelve","soso","oso","bandana", "Louisiana", "Missouri", "Mississippi", "Connecticut", "google", "conscience")
+
+#A
+four_a <- str_subset(rando_words, "^(.)((.*\\1$)|\\1?$)")
+four_a
+
+#B
+four_b <- str_subset(rando_words, "([A-Za-z][A-Za-z]).*\\1")
+four_b
+#C
+four_c <- str_subset(rando_words, "([A-Za-z]).*\\1.*\\1")
+four_c
+```
