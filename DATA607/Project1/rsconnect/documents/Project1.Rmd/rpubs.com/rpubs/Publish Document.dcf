@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/577578/0ca92cebe02b4b1cbf8d0cac8729f5bd
+bundleId: https://api.rpubs.com/api/v1/document/577578/0ca92cebe02b4b1cbf8d0cac8729f5bd
+url: http://rpubs.com/geeman/577578
+when: 1582475390.01627

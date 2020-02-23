@@ -1,0 +1,139 @@
+---
+title: "607-Project-1"
+author: "Gabe Abreu"
+date: "2/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readr)
+library(stringr)
+library(ggplot2)
+library(dplyr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 1
+
+The purpose of this project is to text file and turn into a csv after its been "cleaned" and relevant data calculated and extracted. The exercise uses a chess tournament text with player names, state origin, win-loss record, pre-match ratings, post-match ratings.  
+
+```{r tournament}
+tournamentUrl <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project1/tournamentinfo.txt"
+
+
+rawData <- readLines(tournamentUrl)
+View(rawData)
+#Take a quick glimpse of the data
+rawData[1:10]
+
+#get rid of the dotted seperators 
+lines <- str_detect(rawData, "-----------")
+tournieData <- rawData[!lines]
+
+#Eliminate Headers//Will Add Later
+tournieData2 <- tournieData[-c(1:2)]
+```
+## Break down individual data components 
+
+This is the most important and involved aspect of the project. My approach is to extract all the relevant components and piece it together into a final data frame. Since the text file dedicates two rows of data per player, you can extract information row by row and then further pull data from each row.
+
+
+```{r}
+#Get the rows with the names, id's, points, opponent id
+id_name_points <- tournieData2[seq(from=1, to = length(tournieData2), by=2)]
+head(id_name_points)
+
+player_id <- c(1:64)
+
+#Get rows with the states, pre-ratings, and post-ratings
+st_ratings <- tournieData2[seq(from=2, to = length(tournieData2), by=2)]
+head(st_ratings)
+
+
+#Extract the data we need to do further calculations and create a new data frame
+
+#solution to player_names found on stackoverflow
+player_names <- str_extract(id_name_points, '[:alpha:](\\w+(?:\\s+\\w+)*)')
+head(player_names)
+
+player_points <- as.numeric(str_extract(id_name_points, "\\d.\\d"))
+head(player_points)
+
+player_state <- str_extract(st_ratings, '[:alpha:]{2}')
+head(player_state)
+
+
+#Detect and extract pre-ratings
+both_ratings<-str_extract_all(st_ratings,"(( \\:)|(\\>))?.?\\d{1,}P*\\.?")
+
+pre<-str_detect(unlist(both_ratings),"\\b\\d{3,4}P?\\b")
+post<-str_detect(unlist(both_ratings),"\\>.?\\b\\d{3,4}P?\\b")
+
+preRate<-unlist(both_ratings)[(pre)&(!post)]
+preRate<-as.integer(str_replace_all(preRate,"P",""))
+
+oppId <- str_extract_all(str_extract_all(id_name_points, "\\d+\\|"), "\\d+")
+```
+
+```{r}
+#Calculate total number of opponents per player
+num.opp <- sapply(oppId, length)
+#Create a sequence up to the number of maximum opponents -> 7
+max_seq_opp <- seq_len(max(num.opp))
+
+#Create dataframe of opponent ids per match per player
+#The idea is to replace the opponent ids with their rating and then take the average
+mat <- t(sapply(oppId, "[", i = max_seq_opp)) 
+DF_opp <- as.data.frame(mat)
+
+
+key <- data.frame(player_id, preRate)
+Copy_dfOpp <- DF_opp
+Copy_dfOpp[] <- key$preRate[match(unlist(Copy_dfOpp), key$player_id)]
+as_tibble(head(Copy_dfOpp))
+
+#Make na.rm equal to true to handle NA values
+Copy_dfOpp$Avg_Rating_Opp <- round(apply(Copy_dfOpp, 1, mean, na.rm=TRUE))
+as_tibble(head(Copy_dfOpp))
+```
+
+```{r finalDF}
+Final_DataFrame <- tibble(player_id, player_names, player_state, player_points, preRate, Copy_dfOpp$Avg_Rating_Opp)
+
+colnames(Final_DataFrame) <- c("ID", "Names", "State", "Points", "Pre-Rating", "Average Opponent Pre-Rating")
+
+as_tibble(Final_DataFrame)
+```
+## Write CSV File
+```{r csv}
+write.csv(Final_DataFrame, "clean_tournament_info.csv", row.names = FALSE)
+```
+## Graphical Analysis
+
+
+```{r graphs, echo= TRUE}
+
+ggplot(Final_DataFrame, aes(Points, `Average Opponent Pre-Rating`, color="player id")) + geom_point(color="green") + geom_text(aes(label=player_id),hjust=0, vjust=0) + theme(
+legend.justification = c("right", "top"))
+
+ggplot(Final_DataFrame, aes( `Average Opponent Pre-Rating`, preRate, color="players")) + geom_point(color="black") + theme(
+legend.justification = c("right", "top"))
+```
+
+# Conclusion
+
+This was a harder assignment than first anticipated. It took a lot of online searching to find the best way to approach all the text data and try/test the correct regex to detect and extract the relevant information. 
+
+
+# Sources/References:
+
+Solution to find names:
+https://stackoverflow.com/questions/37307727/regex-to-extract-contact-name-and-email-from-string
+
+A nice guide to cleaning text files:
+https://cran.r-project.org/doc/contrib/de_Jonge+van_der_Loo-Introduction_to_data_cleaning_with_R.pdf
+
+Stringr cheat sheet:
+https://github.com/rstudio/cheatsheets/blob/master/strings.pdf
+
