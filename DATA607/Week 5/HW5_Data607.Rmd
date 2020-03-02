@@ -1,0 +1,104 @@
+---
+title: "Week 5 Assignment"
+author: "Gabe Abreu"
+date: "2/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(zoo)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment #5
+
+
+```{r airlines}
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Week%205/AirlineData.csv"
+
+rawData <- read.csv(url, header = TRUE, stringsAsFactors = FALSE, na.strings = c("", "NA"))
+
+
+##Get a quick overview of the downloaded content
+
+#View summary of data
+summary(rawData)
+
+#View head of data
+head(rawData)
+
+#View structure of data
+str(rawData)
+
+
+##Using Dplyr
+glimpse(rawData)
+
+#Column Names 
+names(rawData)
+```
+Taking a brief look at the raw data, tells us that row 3 has NA values and can be deleted. The first two column names need to be changed. 
+
+```{r cleanup}
+#Get rid of row 3
+df <- rawData[-3, ]
+
+#rename first 2 columns to use gather function
+names(df)[1] <- "Airlines"
+names(df)[2] <- "Status"
+
+df2 <- gather(df, "Cities", "Flights", 3:7)
+
+#glimpse df2
+glimpse(df2)
+
+#notice we have NA values every other row in the airlines column
+#locate all NA values and since we know the previous value should be the next, we can use the na.locf function
+df3 <- na.locf(df2)
+
+df4 <- spread(df3, Status, Flights)
+
+df4$Total_PerCity <- df4$delayed + df4$`on time`
+
+head(df4)
+str(df4)
+
+summary(df4)
+```
+The values are now organized and the flight_total values are type int, so we can proceed with analysis of the data. 
+
+## Data Analysis
+
+```{r analysis, echo=TRUE}
+#Calculate percentage of delayed flights vs on time flights
+df4 <- mutate(df4, delay_Percent = (delayed/Total_PerCity) * 100)
+df4 <- mutate(df4, on_time_percent = (100 - delay_Percent))
+head(df4, 10)
+
+#take average of delayed flights by airline
+
+df5 <- df4 %>% group_by(Airlines) %>% summarize(avg_delays_pct = mean(delay_Percent))
+head(df5)
+
+df6 <- df4 %>% group_by(Cities) %>% summarize(avg_delaysPerCity = mean(delayed))
+head(df6)
+
+df7 <- df4 %>% group_by(Cities) %>% summarize(delay = sum(delayed))
+head(df7)
+
+df8 <- df4 %>% group_by(Cities) %>% summarize(on_time = sum(`on time`))
+
+df8$Delayed <- df7[ ,2]
+head(df8)
+
+ggplot(df4, aes(x=Cities, y=`on time`, group=Airlines, color=Airlines))+geom_line()+labs(x=" Cities", y="On Time Flights")
+
+ggplot(df4, aes(x=Cities, y=delayed, group=Airlines, color=Airlines))+geom_line()+labs(x=" Cities", y="Delayed Flights")
+
+ggplot(df7, aes(x=Cities, y=delay))+geom_bar(stat = "identity")
+
+```
