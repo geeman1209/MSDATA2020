@@ -1,0 +1,144 @@
+---
+title: "Project2_Dataset3"
+author: "Gabe Abreu"
+date: "3/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 2 Dataset 3
+
+
+
+```{r}
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project%202/Dataset3/gender_educational_attainment.csv"
+
+rD <- read.csv(url, header = FALSE, stringsAsFactors = FALSE, na.strings = c("", "NA"))
+
+
+##Get a quick overview of the downloaded content
+
+#View summary of data
+summary(rD)
+
+#View head of data
+head(rD)
+
+#View structure of data
+str(rD)
+
+
+##Using Dplyr
+glimpse(rD)
+
+#Column Names 
+names(rD)
+```
+I want to get rid of the double header and merge them into one. This eliminates 2 rows and gets rid of the NA values in the first two rows in the Region column. 
+
+Compare the data long vs. wide. 
+
+The wide format is easier to read. 
+
+```{r}
+colnames(rD) <- c("Region", "Male_NoHS", "Male_HS", "Male_Assoc", "Male_Bachelors", "Male_Graduate", "Female_NoHS", "Female_HS", "Female_Assoc", "Female_Bachelors", "Female_Graduate")
+
+rd2 <- rD[-c(1,2),]
+
+rd3 <- gather(rd2, "Education_Gender", "Salary", 1:11, -c(Region))
+
+
+head(rd2)
+str(rd2)
+
+summary(rd2)
+```
+Calculate the average incomes by gender and education level across. 
+
+Convert all the characters that should be numeric to numeric. 
+
+Create 2 data frames with all the average incomes. 
+```{r}
+#convert character values to numeric
+rd2$Male_NoHS <- as.numeric(rd2$Male_NoHS)
+rd2$Male_HS <- as.numeric(rd2$Male_HS)
+rd2$Male_Assoc <- as.numeric(rd2$Male_Assoc)
+rd2$Male_Bachelors <- as.numeric(rd2$Male_Bachelors)
+rd2$Male_Graduate <- as.numeric(rd2$Male_Graduate)
+
+#calculate averages for income by educational level
+no_hs_male<- mean(rd2$Male_NoHS)
+male_hs <- mean(rd2$Male_HS)
+Male_Assoc <- mean(rd2$Male_Assoc)
+male_bachelor <- mean(rd2$Male_Bachelors)
+male_graduate <- mean(rd2$Male_Graduate)
+
+AvgDF <- data.frame(no_hs_male, male_hs, Male_Assoc, male_bachelor, male_graduate)
+
+#convert to numeric
+rd2$Female_NoHS <- as.numeric(rd2$Female_NoHS)
+rd2$Female_HS <- as.numeric(rd2$Female_HS)
+rd2$Female_Assoc <- as.numeric(rd2$Female_Assoc)
+rd2$Female_Bachelors <- as.numeric(rd2$Female_Bachelors)
+rd2$Female_Graduate <- as.numeric(rd2$Female_Graduate)
+
+#Calculate averages per educational levels
+no_hs_female<- mean(rd2$Female_NoHS)
+female_hs <- mean(rd2$Female_HS)
+female_Assoc <- mean(rd2$Female_Assoc)
+female_bachelor <- mean(rd2$Female_Bachelors)
+female_graduate <- mean(rd2$Female_Graduate)
+
+AvgDF2 <- data.frame(no_hs_female, female_hs, female_Assoc, female_bachelor, female_graduate)
+
+#Difference in income between genders/educational levels
+DiffinAvg <- AvgDF-AvgDF2
+colnames(DiffinAvg) <- c("M_F_NoHS", "M_F_HS", "M_F_Assoc", "M_F_Bachelors", "M_F_Grad")
+rownames(DiffinAvg) <- "Income_Diff"
+
+DiffinAvg <- DiffinAvg %>% gather("M_F_NoHS:M_F_Grad", Income_Diff, M_F_NoHS:M_F_Grad)
+
+#made a mistake with the column name and changing it
+colnames(DiffinAvg)[1] <- "Gender_Education"
+
+print(DiffinAvg)
+```
+In the table above, I needed to rearrange the data into columns so I could graph the income difference between Men and Women across different educational levels.
+
+Below, I added the incomes for those with No High School, High School, and Associates into a column called Low Education (by gender) and added the incomes of those who acquired a Bachelor's and Graduate degree into High Education column (also by gender). The rows are still arranged by region so it is possible to see the income differences between a male with a "high education level" from the Northeast versus a male who lives in the south with a "low education level". The same logic can applied to women as well. 
+
+I then took the difference low education and high education per region. Which yielded some interesting results for women.
+```{r}
+rd4 <- tibble(rd2$Region)
+
+rd2 %>% select(Male_NoHS:Male_Assoc) %>% rowSums(na.rm=TRUE) -> rd4$Male_LowEdu_Total
+rd2 %>% select(Male_Bachelors:Male_Graduate) %>% rowSums(na.rm=TRUE) -> rd4$Male_HighEdu_Total
+rd4$Male_LowEdu_Total - rd4$Male_HighEdu_Total -> rd4$Male_IncDiff
+
+
+rd2 %>% select(Female_NoHS:Female_Assoc) %>% rowSums(na.rm=TRUE) -> rd4$Female_LowEdu_Total
+rd2 %>% select(Female_Bachelors:Female_Graduate) %>% rowSums(na.rm=TRUE) -> rd4$Female_HighEdu_Total
+rd4$Female_LowEdu_Total - rd4$Female_HighEdu_Total-> rd4$Female_IncDiff
+
+library(knitr)
+kable(rd4)
+```
+## Bar Graph
+
+```{r, echo=TRUE}
+ggplot(DiffinAvg, aes(x=Gender_Education, y=Income_Diff)) + geom_bar(stat = "identity")
+
+```
+
+## Conclusion
+
+The difference in education and income levels between genders is significant and large, every increasing income gaps as educational level increases. This is surprising to me as it is commonly perceived that education is an equalizer in pay, especially attaining higher education levels. However, the data doesn't specify what degrees are being acquired per gender. Some degrees are associated with higher degrees of pay such as computer science, engineering, law, medicine, etc. So a closer look into which degrees are being attained per gender is worthwhile. 
+
+Secondly, comparing the "high education" totals for women and viewing the "low education" totals for men, the difference isn't that significant across regions. 

@@ -1,0 +1,131 @@
+---
+title: "Project 2 - DS1"
+author: "Gabe Abreu"
+date: "3/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 2 Dataset1
+
+
+```{r}
+
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project%202/Dataset1/state_marriage_rates_90_95_99-16.xlsx"
+
+library(httr)
+#Solution to read xlsx files from github was found here: https://community.rstudio.com/t/read-xlsx-from-github/9386/4
+
+#This solution was used for dataset 2 as well.
+
+temp_file <- tempfile(fileext = ".xlsx")
+req <- GET(url, 
+          # authenticate using GITHUB_PAT
+           authenticate(Sys.getenv("GITHUB_PAT"), ""),
+          # write result to disk
+           write_disk(path = temp_file))
+tab <- readxl::read_excel(temp_file)
+
+
+#Get a view of the data
+str(tab)
+
+names(tab)
+
+summary(tab)
+
+head(tab)
+
+tail(tab)
+```
+
+The downloaded excel file did not contain census regions such as "Northeast", "South", "West", "MidWest". To provide a more indepth analysis, it is beneficial to associate states with their appropriate geographic region. 
+
+```{r}
+NE.name <- c("Connecticut","Maine","Massachusetts","New Hampshire",
+             "Rhode Island","Vermont","New Jersey","New York",
+             "Pennsylvania")
+NE.abrv <- c("CT","ME","MA","NH","RI","VT","NJ","NY","PA")
+NE.ref <- c(NE.name,NE.abrv)
+
+MW.name <- c("Indiana","Illinois","Michigan","Ohio","Wisconsin",
+             "Iowa","Kansas","Minnesota","Missouri","Nebraska",
+             "North Dakota","South Dakota")
+MW.abrv <- c("IN","IL","MI","OH","WI","IA","KS","MN","MO","NE",
+             "ND","SD")
+MW.ref <- c(MW.name,MW.abrv)
+
+S.name <- c("Delaware","District of Columbia","Florida","Georgia",
+            "Maryland","North Carolina","South Carolina","Virginia",
+            "West Virginia","Alabama","Kentucky","Mississippi",
+            "Tennessee","Arkansas","Louisiana","Oklahoma","Texas")
+S.abrv <- c("DE","DC","FL","GA","MD","NC","SC","VA","WV","AL",
+            "KY","MS","TN","AR","LA","OK","TX")
+S.ref <- c(S.name,S.abrv)
+
+W.name <- c("Arizona","Colorado","Idaho","New Mexico","Montana",
+            "Utah","Nevada","Wyoming","Alaska","California",
+            "Hawaii","Oregon","Washington")
+W.abrv <- c("AZ","CO","ID","NM","MT","UT","NV","WY","AK","CA",
+            "HI","OR","WA")
+W.ref <- c(W.name,W.abrv)
+
+region.list <- list(
+  Northeast=NE.ref,
+  Midwest=MW.ref,
+  South=S.ref,
+  West=W.ref)
+
+tab$regions <- sapply(tab$State, 
+                 function(x) names(region.list)[grep(x,region.list)])
+
+
+newDf <- tab %>% select(State, regions, everything())
+```
+
+All values that should be num type are assigned correctly and states are character types, which makes further analysis possible. 
+
+
+Now we can also tidy up the data some more and convert the data set from wide to long.
+
+```{r}
+States2 <- gather(newDf, "Years", "Rates", 3:22, na.rm = TRUE, -c(State))
+
+States3 <- States2 %>% group_by(Years) %>% summarize(Avg_Rates = mean(Rates))
+mrates3 <- States2 %>% group_by(Years) %>% summarize(Total_Rates = sum(Rates))
+mrates3
+
+States4 <- States2 %>% group_by(State) %>%summarize(Avg_Rates = mean(Rates))
+
+States5 <- States2 %>% group_by(Years, regions) %>% summarize(Avg_Rates = mean(Rates))
+States5
+
+mrates<- States2 %>% group_by(regions) %>% summarize(Avg_Rates = mean(Rates))
+```
+## Graphs
+
+```{r, echo=TRUE}
+ggplot(mrates, aes(x=regions, y=Avg_Rates, colour=regions)) + geom_bar(stat = "identity")
+
+library(knitr)
+kable(States4)
+
+ggplot(States5, aes(x=Years, y=Avg_Rates, colour = regions)) + geom_point()
+
+ggplot(mrates3, aes(x=Years, y=Total_Rates)) + geom_point()
+```
+
+## Conclusion
+
+Viewing the data, there is a undeniable trend in regards to marriage rates. The rate of people getting married is trending downward, a topic that is being reported on with more frequency (here is one interesting article: https://www.theatlantic.com/magazine/archive/2020/03/the-nuclear-family-was-a-mistake/605536/)
+
+Breaking the data down by regions, the rates are skewed. The West shows a high rate, but viewing the data by States, Nevada is skewing the data. Many people go to Vegas to get married but that doesnt mean they're from Nevada or the West. However, the data still trends downward. Less people are getting married. What is worth further investigating which is mentioned in the article above, is the marriage rates across income levels and regions. Are wealthier folks in the northeast getting married at higher rates than those in the midwest? Are marriage rates for higher income groups trending up or down?
+

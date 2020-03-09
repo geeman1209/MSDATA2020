@@ -1,0 +1,115 @@
+---
+title: "Project2_Dataset2"
+author: "Gabe Abreu"
+date: "3/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyr)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 2 Dataset 2
+
+
+
+```{r}
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project%202/Dataset2/UN_MigrantStockByOriginAndDestination_2015.xlsx"
+
+library(httr)
+temp_file <- tempfile(fileext = ".xlsx")
+req <- GET(url, 
+          # authenticate using GITHUB_PAT
+           authenticate(Sys.getenv("GITHUB_PAT"), ""),
+          # write result to disk
+           write_disk(path = temp_file))
+tab <- readxl::read_excel(temp_file, sheet = "Table 16")
+
+```
+
+Let's get a record of all the column names and their data types.
+```{r}
+names(tab)
+
+str(tab)
+```
+
+All of the column names are messed up and need to be fixed.
+
+First, let's get rid of the first 10 rows, since they serve no purpose. Then let's make the leftover first row into column names and then delete the first row. 
+
+Rename the first 5 columns
+
+Filter out the regions and filter out data for just countries
+```{r}
+
+cleanRow <- tab[-c(1:10),]
+
+colnames(cleanRow) <- as.character(unlist(cleanRow[1,]))
+
+cleanRow = cleanRow[-1,]
+
+colnames(cleanRow)[1:5] <- c("Sort_Order", "Dest_Country", "Notes", "Country_Code", "Data_Type")
+
+cleanRow2 <- cleanRow %>% filter(is.na(Data_Type))
+
+cleanRow3 <- cleanRow %>% filter(!is.na(Data_Type))
+
+```
+Delete the other unncessary columns from the Data Frame
+
+Then lets use na.rm = TRUE to handle all NA values and calculate total migrants in the fourth column called migrants.
+```{r}
+CountryDF <- cleanRow3 %>% select(-Sort_Order, -Notes, -Data_Type, -Total, -starts_with("Other"))
+
+CountryDF2 <- CountryDF %>% gather(origin_Country, migrants, Afghanistan:Zimbabwe, na.rm = TRUE)
+
+CountryDF2$migrants <- as.numeric(CountryDF2$migrants)
+
+glimpse(CountryDF2)
+```
+Let's know isolate the cleaned data frame further to gather information pertaining to the United States. 
+
+```{r}
+Dest_USA <- CountryDF2 %>% filter(Dest_Country == "United States of America")
+
+Exit_USA <- CountryDF2 %>% filter(origin_Country == "United States of America")
+
+```
+## Graphs
+
+Had difficulty using ggplot to display all the country names. Used the plot_ly library to display the data.
+```{r, echo=TRUE}
+
+Dest_USA <- Dest_USA %>% group_by(Dest_Country) %>% arrange(desc(migrants))
+Dest_USA
+
+Exit_USA <- Exit_USA %>% group_by(Dest_Country) %>% arrange(desc(migrants))
+Exit_USA
+
+ggplot(Dest_USA, aes(x = origin_Country, y = migrants)) + geom_point() + scale_y_log10()
+
+ggplot(Dest_USA, aes(x=origin_Country, y=migrants)) + 
+  geom_bar(stat='identity') + theme(axis.text.x=element_text(angle=90, hjust=1)) + scale_y_log10()
+
+
+library(plotly)
+Dest <- plot_ly(x = Dest_USA$origin_Country, y = Dest_USA$migrants, width = 1000, height=300, type = 'bar', mode = 'markers')
+
+Dest <- Dest %>% layout(autosize = TRUE)
+
+Dest
+
+Exit <- plot_ly(data = Exit_USA, x = ~Dest_Country, y = ~migrants)
+Exit
+
+```
+
+## Conclusion
+
+The country with the greatest number of immigrants to the United States is Mexico, while Americans are leaving to Mexico, Canada, the United Kingdom and Puerto Rico (even though Puerto Rico is a commonwealth of the United States). However, there is a signifcant greater number of immmigrants versus Americans leaving the country. The number of Mexican immigrants are 12million while the number of Americans leaving to Mexico is approximately 800,000.
