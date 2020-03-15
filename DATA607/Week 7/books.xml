@@ -1,33 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fav_books>
-    <book id="1">
+    <book>
         <title>Dune</title>
         <author>Frank Herbert</author>
         <author>Brian Herbert</author>
         <publisher>Ace</publisher>
         <year>1990</year>
         <isbn>978-0441172719</isbn>
-        <film name="Dune" director="Denis Villeneuve" year="2020" />
+        <film>
+            <mv_title>Dune</mv_title>
+            <director>Denis Villeneneuve</director>
+            <mv_date>2020</mv_date>
+        </film>
         <fav_quote>“I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me. And when it has gone past I will turn the inner eye to see its path. Where the fear has gone there will be nothing. Only I will remain.”</fav_quote>
     </book>
-    <book id="2">
+    <book>
         <title>The Hobbit</title>
         <author>J.R.R. Tolkien</author>
         <publisher>Houghton Mifflin Harcout</publisher>
         <year>2012</year>
         <isbn>978-0547928227</isbn>
-        <film name="An Unexpected Journey" director="Peter Jackson" year="2012" />
-        <film name="The Desolation of Smaug" director="Peter Jackson" year="2012" />
-        <film name="The Battle of Five Armies" director="Peter Jackson" year="2014" />
+        <film>
+            <mv_title>An Unexpected Journey</mv_title>
+            <director>Peter Jackson</director>
+            <mv_date>2012</mv_date>
+        </film>
+        <film>
+            <mv_title>The Desolation of Smaug</mv_title>
+            <director>Peter Jackson</director>
+            <mv_date>2013</mv_date>
+        </film>
+        <film>
+            <mv_title>The Battle of Five Armies</mv_title>
+            <director>Peter Jackson</director>
+            <mv_date>2014</mv_date>
+        </film>
         <fav_quote>The world is not in your books and maps, it’s out there – Gandalf</fav_quote>
     </book>
-    <book id="3">
+    <book>
         <title>Ender's Game</title>
         <author>Orson Scott Card</author>
         <publisher>Tor Teen</publisher>
         <year>2014</year>
         <isbn>978-0765378484</isbn>
-        <film name="Ender's Game" director="Gavin Hood" year="2013" />
+        <film>
+            <mv_title>Ender's Game</mv_title>
+            <director>Gavin Hood</director>
+            <mv_date>2013</mv_date>
+        </film>
         <fav_quote>“Early to bed and early to rise," Mazer intoned, "makes a man stupid and blind in the eyes.”</fav_quote>
     </book>
 </fav_books>
