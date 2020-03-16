@@ -1,0 +1,91 @@
+---
+title: "Homework7"
+author: "Gabe Abreu"
+date: "3/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(XML)
+library(httr)
+library(rvest)
+library(dplyr)
+library(tidyjson)
+library(RCurl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Homework 7
+
+Pick 3 of my favorite books and create html, xml, and json files detailing relevant information. Import these files using R and create a dataframe.
+
+
+## HTML
+
+Getting the data was relatively easy using rvest. 
+```{r}
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Week%207/books.html"
+
+html_bk <- url%>% read_html()%>%html_node("table")%>%html_table(fill = TRUE)
+
+head(html_bk)
+```
+
+## XML
+
+When I first attempted to pull the xml file i got an error stating that the xml contente does not seem to be xml. Looking the error online, i found that it was treating the url as an xml. 
+
+The data frame is messy but the information is still accessible.
+
+```{r}
+
+url <- "https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Week%207/books.xml"
+
+r = GET(url)
+
+#Parse XML File
+xmlbook <- xmlParse(r)
+
+##The root variable contains all 3 book information. 
+root <- xmlRoot(xmlbook)
+root[1]
+#root[2]
+#root[3]
+
+
+#Extract XML data:
+
+data_xml <- xmlSApply(root,function(x) xmlSApply(x, xmlValue))
+
+#Turn into data frame
+books.frame <- data.frame(t(data_xml), row.names = FALSE)
+
+books.frame[1:2,3]
+books.frame[1:2,2]
+books.frame[1:2,1]
+```
+
+
+## JSON
+JSON was definitely more involved and required careful examination of the data in order to properly traverse through it and pull relevant information.
+
+```{r}
+bookurl <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Week%207/books.json")
+
+# Retrieve book information
+books_js <- bookurl %>% enter_object("fav_books") %>% gather_array("bk") %>% spread_values(title = jstring("title"), author = jstring("author"), publisher = jstring("publisher"), year = jstring("year"), isbn = jstring("isbn"), quote = jstring("fav_quote"))
+
+# Retrieve movie details
+films <- bookurl %>% enter_object("fav_books") %>% gather_array("bk") %>% enter_object("film") %>% gather_array() %>% spread_values(film.title = jstring("name"),film.director = jstring("director"), film.year = jstring("year"))
+
+#Merge all the information into a final table/data frame
+Finalbooks_table <- books_js %>% left_join(films, by = "bk") %>% select(bk, title, author, year, isbn, quote, film.title, film.director, film.year)
+
+Finalbooks_table
+
+```
+## Conclusion 
+
+The data frames are not identical and the methodology behind retrieving the data also isn't the same. HTML is simple but if i didn't have a second author column for "Dune", the data would not be retreived as easily, the column values would be off by 1. 
+
+XML and JSON extacts all relevant information but is a lot "messier". It requires a more extensive "clean up' job.
