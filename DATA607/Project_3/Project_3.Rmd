@@ -1,0 +1,52 @@
+---
+title: "Project_3"
+author: "Emerald Orcas"
+date: "3/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RCurl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 3 : Valuable Data Scientist Skills
+
+The purpose of Project 3 is to use data to answer the question, "Which are the most valued data science skills?". 
+
+After initial brainstorming, we determined to use the following dataset to perform analysis: https://www.kaggle.com/elroyggj/indeed-dataset-data-scientistanalystengineer/kernels.
+
+The dataset takes data science job postings and breaks them down by industry, company, skills, job titles, location and categorical job types (data scientist, data analyst, and data engineer). 
+
+We determind this is an appropriate dataset since it is employers that generally determine what are valued skill sets in an occupation.
+
+
+```{r}
+#Import indeed dataset
+
+url <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project_3/indeed_job_dataset.csv")
+
+raw_data <- read.csv(text = url)
+
+
+#get rid of unnecessary columns
+df_1 <- raw_data
+drops <- c("X","Link","Company","No_of_Reviews","No_of_Stars","Date_Since_Posted","Company_Revenue","Company_Employees", "Description", "Location")
+df_1 <- select(df_1 ,-c(drops))
+
+#delete the columns 17-27
+
+df_2 <- select(df_1, -c(17:27))
+
+
+```
+
+## Including Plots
+
+
+```{r pressure, echo=TRUE}
+plot(pressure)
+```
