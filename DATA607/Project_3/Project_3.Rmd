@@ -10,6 +10,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(RCurl)
+library(stringr)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -42,11 +43,107 @@ df_1 <- select(df_1 ,-c(drops))
 df_2 <- select(df_1, -c(17:27))
 
 
+#add single column for Junior or Senior Data Scientist in Job Title
+df_2['Level'] <- ifelse(grepl("Jr|Junior",ignore.case=TRUE,df_2$Job_Title),'Junior',ifelse(grepl("Sr|Senior",ignore.case=TRUE,df_2$Job_Title),"Senior","Other"))
+
+#add single column for industry
+df_2['Industry'] <- ifelse(df_2$Consulting.and.Business.Services==1,'Consulting&Business',ifelse(df_2$Internet.and.Software,'Internet&Software',ifelse(df_2$Banks.and.Financial.Services==1,'Banks&FiancialServices',ifelse(df_2$Health.Care==1,'HealthCare',ifelse(df_2$Insurance==1,'Insurance',ifelse(df_2$Other_industries==1,'Other',NA))))))
+
 ```
 
-## Data Analysis
+# Data Analysis  
+What are the most popular skills for a data scientist? Do these top skils differ for data analysts and data engineers?  
+```{r most-common-skills}
+skills <- df_2 %>% group_by(Job_Type) %>% summarise(sum(python),sum(sql),sum(machine.learning),sum(r),sum(hadoop),sum(tableau),sum(sas),sum(spark),sum(java),sum(Others))
 
-## Including Plots
+colnames(skills) <- c('Job_Type','Python','SQL','Machine_Learning','R','Hadoop','Tableau','SAS','Spark','Java','Others')
+
+skills <- pivot_longer(skills,cols=c(2:11),names_to = "Skill",values_to = "Count")
+
+ggplot(skills, aes(x=reorder(Skill,-Count),y=Count,fill=Job_Type)) +
+  geom_bar(stat="identity", position = 'dodge') +
+  coord_flip() +
+  xlab('Skill') +
+  ylab('Count of Postings that Listing this Skill') + 
+  ggtitle('Top 10 Skills Among Data Job Listings - LinkedIn') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+Do Skills Differ Among Junior vs. Senior Data Scientists?
+```{r data-science-skills}
+ds <- filter(df_2,Job_Type == 'data_scientist',Level %in% c("Senior","Junior"))
+ds_skills <- ds %>% group_by(Level) %>% summarise(sum(python),sum(sql),sum(machine.learning),sum(r),sum(hadoop),sum(tableau),sum(sas),sum(spark),sum(java),sum(Others))
+
+colnames(ds_skills) <- c('Level','Python','SQL','Machine_Learning','R','Hadoop','Tableau','SAS','Spark','Java','Others')
+
+ds_skills_long <- pivot_longer(ds_skills,cols=c(2:11),names_to = "Skill",values_to = "Count")
+
+ggplot(ds_skills_long, aes(x=reorder(Skill,Count),y=Count,fill=Level)) +
+  geom_bar(stat="identity", position = 'dodge') +
+  coord_flip() +
+  xlab('Skill') +
+  ylab('Count of Postings that Listing this Skill') + 
+  ggtitle('Top 10 Skills Among Data Job Listings - LinkedIn') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+Which industries have the most job postings for data scientists?
+```{r count-job-posting-by-industry}
+posts_by_industry <- filter(df_2,Job_Type == 'data_scientist',is.na(df_2$Industry) == FALSE)
+industry_count <- posts_by_industry %>% group_by(Industry) %>% tally()
+
+colnames(industry_count) <- c('Industry','Count')
+
+ggplot(industry_count, aes(x=reorder(Industry,Count),y=Count)) +
+  geom_bar(stat="identity", position = 'dodge') +
+  coord_flip() +
+  xlab('Industry') +
+  ylab('Count of Job Postings') + 
+  ggtitle('Top 10 Skills Among Data Job Listings - LinkedIn') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Do certain industries require certain skills? We're going to ignore OTHER since it's overwhelmingly popular and we don't know which industries it represents.
+```{r industry-skills}
+#remove rows where industry is NA or OTHER
+industry <- filter(df_2,Job_Type == 'data_scientist',df_2$Industry != 'Other',is.na(df_2$Industry) == FALSE)
+industry_skills <- industry %>% group_by(Industry) %>% summarise(sum(python),sum(sql),sum(machine.learning),sum(r),sum(hadoop),sum(tableau),sum(sas),sum(spark),sum(java),sum(Others))
+
+colnames(industry_skills) <- c('Industry','Python','SQL','Machine_Learning','R','Hadoop','Tableau','SAS','Spark','Java','Others')
+
+industry_skills <- pivot_longer(industry_skills,cols=c(2:11),names_to = "Skill",values_to = "Count")
+
+#Internet & Software
+internet_consulting <- filter(industry_skills,industry_skills$Industry %in% c('Internet&Software','Consulting&Business'))
+a <- ggplot(internet_consulting, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
+  geom_bar(stat="identity", position = 'dodge')+
+  xlab('') +
+  ylab('Count of Job Posts') +
+  theme(axis.text.x = element_text(angle = 40))
+
+#Healthcare, Insurance & Banks
+healthcare_insurance_banks <- filter(industry_skills,industry_skills$Industry %in% c('HealthCare','Insurance','Banks&FinancialServices'))
+b <- ggplot(healthcare_insurance_banks, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
+  geom_bar(stat="identity", position = 'dodge')+
+  xlab('Skill') +
+  ylab('Count of Job Posts') +
+  theme(axis.text.x = element_text(angle = 40))
+
+grid.arrange(a,b,nrow=2,top = "Top Skills Across Industry for Data Scientist Job Postings")
+
+```
+# Which skills pay the highest salary?
+```{r avg-highest-salary}
+ds_salary <- select(filter(df_2,df_2$Job_Type=='data_scientist'), Queried_Salary,python,sql,machine.learning,r,hadoop,tableau,sas,spark,java,Others)
+ds_salary_job_type <- pivot_longer(ds_salary,cols=c(2:11),names_to='Skill')
+skill <- ds_salary_job_type %>% group_by(Queried_Salary,Skill) %>% summarise(sum(value))
+
+ggplot(skill, aes(x=Queried_Salary,y='sum(value)',fill=Skill)) +
+  geom_bar(stat="identity", position = 'dodge')+
+  xlab('Skill') +
+  ylab('Count of Job Posts') +
+  theme(axis.text.x = element_text(angle = 40))
+```
+
+# Including Plots
 
 
 ```{r pressure, echo=TRUE}
