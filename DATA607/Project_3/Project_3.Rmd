@@ -149,7 +149,7 @@ industry_skills <- pivot_longer(industry_skills,cols=c(2:11),names_to = "Skill",
 
 #Internet & Software
 internet <- filter(industry_skills,industry_skills$Industry %in% c('Internet&Software','Consulting&Business'))
-a <- ggplot(internet_consulting, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
+a <- ggplot(internet, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
   geom_bar(stat="identity", position = 'dodge')+
   xlab('') +
   ylab('Count of Job Posts') +
@@ -178,3 +178,28 @@ grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job
 ```{r pressure, echo=TRUE}
 plot(pressure)
 ```
+
+
+```{r}
+glimpse(raw_data)
+```
+
+```{r leading-data, echo=TRUE}
+leadingtech <- c("python", "machine.learning", "r", "hadoop", "tableau", "spark")
+
+raw_data %>% 
+  gather(key, value, leadingtech) %>% 
+  group_by_("Job_Type", "key") %>% 
+  summarise(count = mean(value)) %>% 
+  ggplot()+
+  geom_col(ggplot2::aes_string(x="key", y="count", fill="Job_Type"), width=0.5, position="dodge")+
+  coord_flip()
+
+```
+
+```{r}
+
+#plot_mean_count(raw_data, leadingtech)
+#radar_mean_count(raw_data, leadingtech)
+```
+
