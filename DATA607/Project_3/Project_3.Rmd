@@ -197,9 +197,5 @@ raw_data %>%
 
 ```
 
-```{r}
 
-#plot_mean_count(raw_data, leadingtech)
-#radar_mean_count(raw_data, leadingtech)
-```
 
