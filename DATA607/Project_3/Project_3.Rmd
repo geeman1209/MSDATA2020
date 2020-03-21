@@ -1,6 +1,6 @@
 ---
 title: "Project_3"
-author: "Emerald Orcas"
+author: "Emerald Orcas - Gabe Abreu, Amit Kapoor & Devin Teran "
 date: "3/17/2020"
 output: html_document
 ---
@@ -12,26 +12,30 @@ library(ggplot2)
 library(RCurl)
 library(stringr)
 library(pdp)
+library(gridExtra)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Project 3 : Valuable Data Scientist Skills
 
-The purpose of Project 3 is to use data to answer the question, "Which are the most valued data science skills?". 
+The purpose of Project 3 is to use data to answer the question, ***"Which are the most valued data science skills?".*** 
 
 After initial brainstorming, we determined to use the following dataset to perform analysis: https://www.kaggle.com/elroyggj/indeed-dataset-data-scientistanalystengineer/kernels.
 
 The dataset takes data science job postings and breaks them down by industry, company, skills, job titles, location and categorical job types (data scientist, data analyst, and data engineer). 
 
 We determined this is an appropriate dataset since it is employers that generally determine what are valued skill sets in an occupation.
-
+  
+    
 There are important but subtle differences between the three major job titles within the data science job family.
 
-Data Analysts query and process data, provide reports, summarize and visualize data. They generally have a strong grasp of how to utilize existing tools and methods to solve problems, and help their respective company understand specific problems. Typical tasks performed by analysts are: cleaning and organizing raw data, use statistics to gain a big picture perspective on their data, find trends in data, and create visualizations for company staff to interpret the data.
+***Data Analysts*** query and process data, provide reports, summarize and visualize data. They generally have a strong grasp of how to utilize existing tools and methods to solve problems, and help their respective company understand specific problems. Typical tasks performed by analysts are: cleaning and organizing raw data, use statistics to gain a big picture perspective on their data, find trends in data, and create visualizations for company staff to interpret the data.
 
-Data Engineers are the professionals who prepare and create the infrastructure for "big data". They transform the data into a useable format for analysis by data scientists. Data Engineers skill set lean toward the software development skill set. They build APIs for data consumption, integrate various datasets into existing data pipelines, monitor and test data pipelines to ensure optimal performance.
+***Data Engineers*** are the professionals who prepare and create the infrastructure for "big data". They transform the data into a useable format for analysis by data scientists. Data Engineers skill set lean toward the software development skill set. They build APIs for data consumption, integrate various datasets into existing data pipelines, monitor and test data pipelines to ensure optimal performance.
 
-Data Scientists apply statistics, machine learning, and analytic approaches to solve problems. They deep dive into big data, unstructured data, and regular data to find patterns and future trends. Data Scientists are expected to have programming skills and an ability to design new algorithms. They uncover hidden trends by using supervised and unsupervised learning methods toward their machine learning models.Some of a data scientist's task include: using statistical models to determine the validity of analyses, use machine learning to create better predictive algorithms, test and improve their machine learnig models and create data visualizations to summarize advanced analysis. 
+***Data Scientists*** apply statistics, machine learning, and analytic approaches to solve problems. They deep dive into big data, unstructured data, and regular data to find patterns and future trends. Data Scientists are expected to have programming skills and an ability to design new algorithms. They uncover hidden trends by using supervised and unsupervised learning methods toward their machine learning models.Some of a data scientist's task include: using statistical models to determine the validity of analyses, use machine learning to create better predictive algorithms, test and improve their machine learnig models and create data visualizations to summarize advanced analysis. 
+
+# Data Import  
 
 ```{r}
 library(dbConnect)
@@ -43,18 +47,16 @@ host = 'dsdb-1.cswpiojk9qjg.us-east-1.rds.amazonaws.com'
 myDb = dbConnect(MySQL(), user=username, password=password, dbname=dbname, host=host)
 ```
 
-
-
 ```{r}
-
 #Import indeed dataset
-
 url <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project_3/indeed_job_dataset.csv")
 
 raw_data <- read.csv(text = url)
-
-
-#get rid of unnecessary columns
+```
+# Cleaning the Data  
+  
+Here we will get rid of unnecessary columns.  
+```{r clean-data}
 df_1 <- raw_data
 drops <- c("X","Link","Company","No_of_Reviews","No_of_Stars","Date_Since_Posted","Company_Revenue","Company_Employees", "Description", "Location")
 df_1 <- select(df_1 ,-c(drops))
@@ -62,26 +64,28 @@ df_1 <- select(df_1 ,-c(drops))
 #delete the columns 17-27
 df_2 <- select(df_1, -c(17:27))
 ```
+  
+The raw data originally had 6 columns, one for a different industry. If the job posting was within that industry, the column would be set to 1 if not, it was set to 0. We decided to combined these 6 columns into a single column 'Industry' with 6 different categories: Consulting.  
 
+Additionally, we wanted to distinguish if the job titles had any variations of the words 'junior' or 'senior' in the title.  Both of these additions will make our analysis easier.
 ```{r calculate-additional-columns}
-#add single column to flag job titles for Junior or Senior level data science jobs in the Job Title
-df_2['Level'] <- ifelse(grepl("Jr|Junior",ignore.case=TRUE,df_2$Job_Title),'Junior',ifelse(grepl("Sr|Senior",ignore.case=TRUE,df_2$Job_Title),"Senior","Other"))
-
-#add single column for industry
+#single column for industry
 df_2['Industry'] <- ifelse(df_2$Consulting.and.Business.Services==1,'Consulting&Business',ifelse(df_2$Internet.and.Software,'Internet&Software',ifelse(df_2$Banks.and.Financial.Services==1,'Banks&FiancialServices',ifelse(df_2$Health.Care==1,'HealthCare',ifelse(df_2$Insurance==1,'Insurance',ifelse(df_2$Other_industries==1,'Other',NA))))))
 
-```
-
-# Data Analysis  
-
-What are the most popular skills for a data scientist? Do these top skils differ for data analysts and data engineers?  
-
+#flag junior or senior job titles
+df_2['Level'] <- ifelse(grepl("Jr|Junior",ignore.case=TRUE,df_2$Job_Title),'Junior',ifelse(grepl("Sr|Senior",ignore.case=TRUE,df_2$Job_Title),"Senior","Other"))
+```  
+  
+# Data Analysis    
+  
+#### What are the most popular skills for a data scientist? Do these top skils differ for data analysts and data engineers?     
+  
 The data shows that data engineers are typically expected to know Java, Hadoop, Spark, SQL, and python. A lot of the "other" skills required of data engineers are cloud based technologies (Azure, AWS, Google Cloud) and linux. This is to be expected, as previously mentioned, data engineer's skill set gravitates toward software development, a field where Java and SQL is prevelant for backend systems. Linux since it is open sourced and flexible is the operating system of choice, unless you're in a Microsoft-based environment.
 
-Data analysts are exptected to know Tableau to a greater degree than data scientists or engineers. Data analysts are also required to know SQL, to perform basic queries from historical data.  Tableau is an interactive data visualization tool, also known as a business intelligence tool.  SAS is another popular skill set for analysts, is statistical software used for analysis. These skills match well with the provided job description for analysts. Their skills are going to be geared for visualization, mining past data, and created business reports.
+**Data analysts** are exptected to know Tableau to a greater degree than data scientists or engineers. Data analysts are also required to know SQL, to perform basic queries from historical data.  Tableau is an interactive data visualization tool, also known as a business intelligence tool.  SAS is another popular skill set for analysts, is statistical software used for analysis. These skills match well with the provided job description for analysts. Their skills are going to be geared for visualization, mining past data, and created business reports.
 
-Data scientist, as the data shows, is a versatile role. However, Data scientists are expected know Machine Learning and R by significant margins above engineers and analysts. Data Scientists, to a lesser degree, are also expected to know Hadoop, Spark, and Java. Theses are the key skill sets for engineers. We suspect, a succesful data scientist may not be an expert in data engineering but should at least be familiar with the concepts associated with the profession. Of course, python is univerally required all positions. 
-
+**Data scientist**, as the data shows, is a versatile role. However, Data scientists are expected know Machine Learning and R by significant margins above engineers and analysts. Data Scientists, to a lesser degree, are also expected to know Hadoop, Spark, and Java. Theses are the key skill sets for engineers. We suspect, a succesful data scientist may not be an expert in data engineering but should at least be familiar with the concepts associated with the profession. Of course, python is univerally required all positions.   
+  
 ```{r most-common-skills}
 skills <- df_2 %>% group_by(Job_Type) %>% summarise(sum(python),sum(sql),sum(machine.learning),sum(r),sum(hadoop),sum(tableau),sum(sas),sum(spark),sum(java),sum(Others))
 colnames(skills) <- c('Job_Type','Python','SQL','Machine_Learning','R','Hadoop','Tableau','SAS','Spark','Java','Others')
@@ -99,13 +103,13 @@ ggplot(skills, aes(x=reorder(Skill,-Perct_Total),y=Perct_Total,fill=Job_Type)) +
   ggtitle('Top Skills on Job Listings - LinkedIn') +
   theme(plot.title = element_text(hjust = 0.5)) +
   theme(axis.text.x = element_text(angle = 90)) 
-```
-## Do Skills Differ Among Junior vs. Senior Data Scientists?
+```  
+  
+#### Do Skills Differ Among Junior vs. Senior Data Scientists?  
 
-There isn't a difference in the top skills required from a junior or senior data scientists. Data scientists, senior and junior, are expected to know machine learning, python, and R. As you go down the list, there are differences in required skills. Senior data scientists are expected to know more data engineering (Hadoop, Spark, SQL) while junior level scientists, visualization tools like Tableau are in higher demand. 
+There isn't a difference in the top skills required from a junior or senior data scientist. Data scientists, senior and junior, are expected to know machine learning, python, and R. As you go down the list, there are differences in required skills. Senior data scientists are expected to know more data engineering (Hadoop, Spark, SQL) while junior level scientists, visualization tools like Tableau are in higher demand. 
 
 ```{r data-science-skills}
-library(gridExtra)
 ds <- filter(df_2,Job_Type == 'data_scientist',Level %in% c("Senior","Junior"))
 ds_skills <- ds %>% group_by(Level) %>% summarise(sum(python),sum(sql),sum(machine.learning),sum(r),sum(hadoop),sum(tableau),sum(sas),sum(spark),sum(java),sum(Others))
 colnames(ds_skills) <- c('Level','Python','SQL','Machine_Learning','R','Hadoop','Tableau','SAS','Spark','Java','Others')
@@ -137,7 +141,8 @@ j <- ggplot(junior, aes(x=reorder(Skill,Perct_Total),y=Perct_Total,fill=Level)) 
 grid.arrange(s,j,nrow=2,top = "Top Skills for Junior vs. Senior Data Scientists")
 
 ```
-## Which industries have the most job postings for data scientists?
+  
+#### Which industries have the most job postings for data scientists?  
 
 Top industries are consulting/business, internet/software, banking/finance, healthcare and insurance.
 
@@ -155,8 +160,8 @@ ggplot(industry_count, aes(x=reorder(Industry,Count),y=Count)) +
   ggtitle('Top Industries Among Data Job Listings - LinkedIn') +
   theme(plot.title = element_text(hjust = 0.5))
 ```
-
-# Let's take the top skills to see which pay the highest salary for data scientists?
+  
+#### Let's take the top skills to see which pay the highest salary for data scientists?
 
 The two extremes of the spectrum require little machine learning, python, and R. This actually makes sense if the professionals making above $160K are in management, so they're not actively coding as much as senior-mid tier professionals. The data shows machine learning, python, and R are the highest paying skills.
 
@@ -174,8 +179,8 @@ ggplot(skill, aes(x=Salary_Range,y=Count,fill=Skill)) +
   ggtitle("Highest Paying Skills") +
   theme(plot.title = element_text(hjust = 0.5)) 
 ```
-
-# Do certain industries require certain skills? We're going to ignore OTHER since it's overwhelmingly popular and we don't know which industries it represents.
+  
+#### Do certain industries require certain skills? We're going to ignore OTHER since it's overwhelmingly popular and we don't know which industries it represents.
 
 The required skills are similiar across industries most in-demand of data scientists. This is a boon to all data scientists as moving across industries should be easier than other professions. This opens the job market in a positive manner to all current and future data scientists.
 
@@ -214,13 +219,6 @@ grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job
 
 
 # Including Plots
-
-
-```{r pressure, echo=TRUE}
-plot(pressure)
-```
-
-
 ```{r}
 glimpse(raw_data)
 ```
