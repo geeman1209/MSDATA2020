@@ -185,17 +185,73 @@ glimpse(raw_data)
 ```
 
 ```{r leading-data, echo=TRUE}
-leadingtech <- c("python", "machine.learning", "r", "hadoop", "tableau", "spark")
+
+leadingtech <- c("python","sql","machine.learning","r","hadoop","tableau","sas","spark","java","Others")
 
 raw_data %>% 
   gather(key, value, leadingtech) %>% 
   group_by_("Job_Type", "key") %>% 
   summarise(count = mean(value)) %>% 
   ggplot()+
-  geom_col(ggplot2::aes_string(x="key", y="count", fill="Job_Type"), width=0.5, position="dodge")+
+  geom_col(aes_string(x="key", y="count", fill="Job_Type"), width=0.5, position="dodge")+
   coord_flip()
 
 ```
+
+
+
+```{r skill-count, echo=TRUE}
+skill_ct <- raw_data %>% 
+    select(leadingtech) %>%
+    gather(key,value) %>% 
+    filter(value==1) %>%
+    group_by(key) %>% 
+    summarise(n = n())
+
+skill_ct
+```
+
+
+```{r polar-split, echo=TRUE}
+
+# gather() takes leadingtech as multiple columns and gathers them into key-value pairs to make “wide” data longer
+# group_by_ groups the data by leadingtech
+# summarise the results by leadingtech counts for all 3 job types data_analyst, data_engineer and data_scientist
+# draw polygon for skillset and its count by Job_Type
+# highlights the count points
+# split up by Job_Type using reformulate to have splitted horizontally
+# draw with polar coordinates
+# set the theme
+
+polar_split <- raw_data %>% 
+  gather(key, value, leadingtech) %>% 
+  group_by_("Job_Type", "key")  %>% 
+  summarise(count = sum(value)) %>% 
+  ggplot() + 
+  geom_polygon(aes_string(x="key", y="count", col="Job_Type", group="Job_Type"), size=0.5, fill=NA) + 
+  geom_point(aes_string(x="key", y="count", col="Job_Type", group="Job_Type"), size=1) + 
+  facet_grid(reformulate("Job_Type")) + 
+  coord_polar() + 
+  theme_minimal() +
+  theme(legend.position = "top",
+                 legend.title = element_blank(), 
+                 legend.spacing.x = grid::unit(0.25, 'cm'),
+                 legend.text = element_text(margin = margin(t = 10),vjust=2, size=15),
+                 axis.title = element_blank(),
+                 axis.text.x = element_text(size=10),
+                 axis.text.y = element_blank())
+
+polar_split
+
+```
+
+
+
+### References: 
+
+https://medium.com/optima-blog/using-polar-coordinates-for-better-visualization-1d337b6c9dec
+
+
 
 
 
