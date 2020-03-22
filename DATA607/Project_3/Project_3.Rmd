@@ -61,6 +61,8 @@ glimpse(raw_data)
 ```
 
 We're going to get rid of columns that are not necessary for our analysis.  This includes all state data and information related to the company that posting the job.  
+
+
 ```{r clean-data}
 df_1 <- raw_data
 drops <- c("X","Link","Company","No_of_Reviews","No_of_Stars","Date_Since_Posted","Company_Revenue","Company_Employees", "Description", "Location")
@@ -73,6 +75,8 @@ df_2 <- select(df_1, -c(17:27))
 The raw data originally had 6 columns, one for each industry. If the job posting was within that industry, the column would be set to 1 if not, it was set to 0. We decided to combined these 6 columns into a single column 'Industry' with 6 different categories: Consulting&Business, Internet&Software, Banks&FiancialServices, HealthCare, Insurance and Other.  
 
 Additionally, we wanted to distinguish if the job titles had any variations of the words 'junior' or 'senior' in the title.  Both of these additions will make our analysis easier.
+
+
 ```{r calculate-additional-columns}
 #single column for industry
 df_2['Industry'] <- ifelse(df_2$Consulting.and.Business.Services==1,'Consulting&Business',ifelse(df_2$Internet.and.Software,'Internet&Software',ifelse(df_2$Banks.and.Financial.Services==1,'Banks&FiancialServices',ifelse(df_2$Health.Care==1,'HealthCare',ifelse(df_2$Insurance==1,'Insurance',ifelse(df_2$Other_industries==1,'Other',NA))))))
@@ -93,7 +97,8 @@ skill_ct <- raw_data %>%
     filter(value==1) %>%
     group_by(key) %>% 
     summarise(n = n())
-    
+
+skill_ct  
 ```  
   
 #### What are the most popular skills for a data scientist? Do these top skils differ for data analysts and data engineers?     
