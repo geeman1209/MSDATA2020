@@ -37,7 +37,7 @@ There are important but subtle differences between the three major job titles wi
 ***Data Scientists*** apply statistics, machine learning, and analytic approaches to solve problems. They deep dive into big data, unstructured data, and regular data to find patterns and future trends. Data Scientists are expected to have programming skills and an ability to design new algorithms. They uncover hidden trends by using supervised and unsupervised learning methods toward their machine learning models.Some of a data scientist's task include: using statistical models to determine the validity of analyses, use machine learning to create better predictive algorithms, test and improve their machine learnig models and create data visualizations to summarize advanced analysis. 
 
 # Data Import  
-
+To begin our project, we loaded our Indeed dataset into normalized tables in AWS to store our data.  The scripts used to create those tables can be found in the project github repository. 
 ```{r}
 #Create connection to database and load acquired data into data frame.
 username = 'admin'
@@ -51,7 +51,7 @@ myDb = dbConnect(MySQL(), user=username, password=password, dbname=dbname, host=
 #Import indeed dataset
 url <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Project_3/indeed_job_dataset.csv")
 
-raw_data <- read.csv(text = url)
+raw_data <- read.csv(text = url,stringsAsFactors = FALSE)
 ```
 # Cleaning the Data  
 
@@ -96,7 +96,8 @@ skill_ct <- raw_data %>%
     gather(key,value) %>% 
     filter(value==1) %>%
     group_by(key) %>% 
-    summarise(n = n())
+    summarise(n = n()) %>%
+    arrange(-n)
 
 skill_ct  
 ```  
@@ -144,23 +145,26 @@ ds_skills_long['Total_Jobs']  <- b$n
 ds_skills_long['Perct_Total'] <- b$Count / b$n
 
 senior <- filter(ds_skills_long,ds_skills_long$Level == "Senior")
-s <- ggplot(senior, aes(x=reorder(Skill,Perct_Total),y=Perct_Total,fill=Level)) +
-  geom_bar(stat="identity", position = 'dodge') +
+s <- ggplot(senior, aes(x=reorder(Skill,Perct_Total),y=Perct_Total,color=Level,fill=Level)) +
+  geom_bar(stat="identity", position = 'dodge',width=0.7) +
   coord_flip() +
   xlab('Skill') +
   ylab('') + 
   ggtitle('Senior Level') +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values=c("#E69F00")) +
+  scale_fill_manual(values=c("#E69F00")) 
 
 junior <- filter(ds_skills_long,ds_skills_long$Level == "Junior")
-j <- ggplot(junior, aes(x=reorder(Skill,Perct_Total),y=Perct_Total,fill=Level)) +
-  geom_bar(stat="identity", position = 'dodge') +
+j <- ggplot(junior, aes(x=reorder(Skill,Perct_Total),y=Perct_Total,color=Level,fill=Level)) +
+  geom_bar(stat="identity", position = 'dodge',width=0.7) +
   coord_flip() +
   xlab('Skill') +
   ylab('% Postings with Skill') + 
   ggtitle('Junior Level') +
-  theme(plot.title = element_text(hjust = 0.5))
-
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values=c("#009E73")) +
+  scale_fill_manual(values=c("#009E73")) 
 grid.arrange(s,j,nrow=2,top = "Top Skills for Junior vs. Senior Data Scientists")
 
 ```
@@ -175,13 +179,14 @@ industry_count <- posts_by_industry %>% group_by(Industry) %>% tally()
 
 colnames(industry_count) <- c('Industry','Count')
 
-ggplot(industry_count, aes(x=reorder(Industry,Count),y=Count)) +
+ggplot(industry_count, aes(x=reorder(Industry,Count),y=Count,fill = "#E69F00",color="black")) +
   geom_bar(stat="identity", position = 'dodge') +
   coord_flip() +
   xlab('Industry') +
   ylab('Count of Job Postings') + 
   ggtitle('Top Industries Among Data Job Listings - LinkedIn') +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  theme(legend.position = "none")
 ```
   
 #### Let's take the top skills to see which pay the highest salary for data scientists?
@@ -193,6 +198,10 @@ ds_salary <- select(filter(df_2,df_2$Job_Type=='data_scientist'), Queried_Salary
 ds_salary_job_type <- pivot_longer(ds_salary,cols=c(2:5),names_to='Skill')
 skill <- ds_salary_job_type %>% group_by(Queried_Salary,Skill) %>% summarise(sum(value))
 colnames(skill) <- c('Salary_Range','Skill','Count')
+
+#rearrange salary placements
+skill$Salary_Range <- factor(skill$Salary_Range, levels=c("<80000","80000-99999","100000-119999","120000-139999","140000-159999",">160000"))
+skill <- skill[order(skill$Salary_Range),]
 
 ggplot(skill, aes(x=Salary_Range,y=Count,fill=Skill)) +
   geom_bar(stat="identity", position = 'dodge')+
@@ -228,13 +237,15 @@ a <- ggplot(internet, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
 
 #Healthcare, Insurance & Banks
 healthcare_insurance_banks <- filter(industry_skills,industry_skills$Industry %in% c('HealthCare','Insurance','Banks&FinancialServices'))
-b <- ggplot(healthcare_insurance_banks, aes(x=reorder(Skill,-Count),y=Count,fill=Industry)) +
+b <- ggplot(healthcare_insurance_banks, aes(x=reorder(Skill,-Count),y=Count,color=Industry,fill=Industry)) +
   geom_bar(stat="identity", position = 'dodge')+
   xlab('Skill') +
   ylab('Count of Job Posts') +
   theme(axis.text.x = element_text(angle = 90)) +
   expand_limits(y = c(0,160)) + 
-  theme(legend.position = c(0.6725, 0.8))
+  theme(legend.position = c(0.6725, 0.8)) + 
+  scale_fill_manual(values = c("#009E73","#E69F00")) +
+  scale_color_manual(values = c("#009E73","#E69F00")) 
 
 grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job Postings",widths=c(1,1))
 
@@ -243,7 +254,7 @@ grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job
 
 #### Additional Visualizations
 
-Finally let's do a comparitive study for all 3 Job Types: data_analyst, data_engineer and data_scientist and the data science skills. The data shows Data Scientist has mostly all the skills of Data Analyst and Data Engineer. It would be interesting to know what 'Others' skill includes.
+Finally, let's do a comparative study for all 3 Job Types: data_analyst, data_engineer and data_scientist and the skills needed for those jobs. This visualization shows that data_scientist has roughly all the same skills as data_analyst and data_engineer. Data_scientist clearly uses machine learning, python and r more than the other two jobs.  This conclusion is supported in our earlier analysis.  It would be interesting to know what 'Others' skill includes.
 
 ```{r polar-split, echo=TRUE,warning=FALSE}
 # gather() takes leadingtech as multiple columns and gathers them into key-value pairs to make “wide” data longer
@@ -284,8 +295,9 @@ Since we used a curated dataset, our analysis was restricted to the quality of t
 
 ### References: 
 
-https://medium.com/optima-blog/using-polar-coordinates-for-better-visualization-1d337b6c9dec
-https://www.kaggle.com/inigoml/data-exploration
+{r} [https://medium.com/optima-blog/using-polar-coordinates-for-better-visualization-1d337b6c9dec](https://medium.com/optima-blog/using-polar-coordinates-for-better-visualization-1d337b6c9dec)
+{r} [https://www.kaggle.com/inigoml/data-exploration](https://www.kaggle.com/inigoml/data-exploration)
+{r} [https://community.rstudio.com/t/can-we-specify-the-order-for-factor-character-type-variables-when-using-arrange/3355/2](https://community.rstudio.com/t/can-we-specify-the-order-for-factor-character-type-variables-when-using-arrange/3355/2)
 
 
 
