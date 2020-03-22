@@ -1,8 +1,12 @@
 ---
-title: "Project_3"
-author: "Emerald Orcas - Gabe Abreu, Amit Kapoor & Devin Teran "
+title: "Project 3: Valuable Data Scientist Skills"
+author: "Team Emerald Orcas - Gabe Abreu, Amit Kapoor & Devin Teran "
 date: "3/17/2020"
-output: html_document
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,20 +17,17 @@ library(RCurl)
 library(stringr)
 library(pdp)
 library(gridExtra)
+library(dbConnect)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Project 3 : Valuable Data Scientist Skills
-
+# Overview  
 The purpose of Project 3 is to use data to answer the question, ***"Which are the most valued data science skills?".*** 
 
 After initial brainstorming, we determined to use the following dataset to perform analysis: https://www.kaggle.com/elroyggj/indeed-dataset-data-scientistanalystengineer/kernels.
 
-The dataset takes data science job postings and breaks them down by industry, company, skills, job titles, location and categorical job types (data scientist, data analyst, and data engineer). 
-
-We determined this is an appropriate dataset since it is employers that generally determine what are valued skill sets in an occupation.
-  
-    
+The dataset takes data related job postings and breaks them down by industry, company, skills, job titles, location and categorical job types (data scientist, data analyst, and data engineer). We determined this is an appropriate dataset since it is employers that generally determine what are valued skill sets in an occupation.  
+<br />  
 There are important but subtle differences between the three major job titles within the data science job family.
 
 ***Data Analysts*** query and process data, provide reports, summarize and visualize data. They generally have a strong grasp of how to utilize existing tools and methods to solve problems, and help their respective company understand specific problems. Typical tasks performed by analysts are: cleaning and organizing raw data, use statistics to gain a big picture perspective on their data, find trends in data, and create visualizations for company staff to interpret the data.
@@ -38,7 +39,6 @@ There are important but subtle differences between the three major job titles wi
 # Data Import  
 
 ```{r}
-library(dbConnect)
 #Create connection to database and load acquired data into data frame.
 username = 'admin'
 password = 'abcd1234'
@@ -54,18 +54,23 @@ url <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DA
 raw_data <- read.csv(text = url)
 ```
 # Cleaning the Data  
-  
-Here we will get rid of unnecessary columns.  
+
+#### Let's take a look at our raw data:
+```{r}
+glimpse(raw_data)
+```
+
+We're going to get rid of columns that are not necessary for our analysis.  This includes all state data and information related to the company that posting the job.  
 ```{r clean-data}
 df_1 <- raw_data
 drops <- c("X","Link","Company","No_of_Reviews","No_of_Stars","Date_Since_Posted","Company_Revenue","Company_Employees", "Description", "Location")
-df_1 <- select(df_1 ,-c(drops))
+df_1 <- select(df_1 ,-c(all_of(drops)))
 
-#delete the columns 17-27
+#delete state related data in the columns 17-27
 df_2 <- select(df_1, -c(17:27))
 ```
   
-The raw data originally had 6 columns, one for a different industry. If the job posting was within that industry, the column would be set to 1 if not, it was set to 0. We decided to combined these 6 columns into a single column 'Industry' with 6 different categories: Consulting.  
+The raw data originally had 6 columns, one for each industry. If the job posting was within that industry, the column would be set to 1 if not, it was set to 0. We decided to combined these 6 columns into a single column 'Industry' with 6 different categories: Consulting&Business, Internet&Software, Banks&FiancialServices, HealthCare, Insurance and Other.  
 
 Additionally, we wanted to distinguish if the job titles had any variations of the words 'junior' or 'senior' in the title.  Both of these additions will make our analysis easier.
 ```{r calculate-additional-columns}
@@ -76,11 +81,24 @@ df_2['Industry'] <- ifelse(df_2$Consulting.and.Business.Services==1,'Consulting&
 df_2['Level'] <- ifelse(grepl("Jr|Junior",ignore.case=TRUE,df_2$Job_Title),'Junior',ifelse(grepl("Sr|Senior",ignore.case=TRUE,df_2$Job_Title),"Senior","Other"))
 ```  
   
-# Data Analysis    
+# Data Analysis     
+  
+#### Let's look at the Most Frequently Seen Skills  
+```{r skill-count, echo=TRUE}
+leadingtech <- c("python","sql","machine.learning","r","hadoop","tableau","sas","spark","java","Others")
+
+skill_ct <- raw_data %>% 
+    select(all_of(leadingtech)) %>%
+    gather(key,value) %>% 
+    filter(value==1) %>%
+    group_by(key) %>% 
+    summarise(n = n())
+    
+```  
   
 #### What are the most popular skills for a data scientist? Do these top skils differ for data analysts and data engineers?     
   
-The data shows that data engineers are typically expected to know Java, Hadoop, Spark, SQL, and python. A lot of the "other" skills required of data engineers are cloud based technologies (Azure, AWS, Google Cloud) and linux. This is to be expected, as previously mentioned, data engineer's skill set gravitates toward software development, a field where Java and SQL is prevelant for backend systems. Linux since it is open sourced and flexible is the operating system of choice, unless you're in a Microsoft-based environment.
+The data shows that **data engineers** are typically expected to know Java, Hadoop, Spark, SQL, and python. A lot of the "other" skills required of data engineers are cloud based technologies (Azure, AWS, Google Cloud) and linux. This is to be expected, as previously mentioned, data engineer's skill set gravitates toward software development, a field where Java and SQL is prevelant for backend systems. Linux since it is open sourced and flexible is the operating system of choice, unless you're in a Microsoft-based environment.
 
 **Data analysts** are exptected to know Tableau to a greater degree than data scientists or engineers. Data analysts are also required to know SQL, to perform basic queries from historical data.  Tableau is an interactive data visualization tool, also known as a business intelligence tool.  SAS is another popular skill set for analysts, is statistical software used for analysis. These skills match well with the provided job description for analysts. Their skills are going to be geared for visualization, mining past data, and created business reports.
 
@@ -218,41 +236,9 @@ grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job
 ```
 
 
-# Including Plots
-```{r}
-glimpse(raw_data)
-```
+#### Additional Visualizations
 
-```{r leading-data, echo=TRUE}
-
-leadingtech <- c("python","sql","machine.learning","r","hadoop","tableau","sas","spark","java","Others")
-
-raw_data %>% 
-  gather(key, value, leadingtech) %>% 
-  group_by_("Job_Type", "key") %>% 
-  summarise(count = mean(value)) %>% 
-  ggplot()+
-  geom_col(aes_string(x="key", y="count", fill="Job_Type"), width=0.5, position="dodge")+
-  coord_flip()
-
-```
-
-
-
-```{r skill-count, echo=TRUE}
-skill_ct <- raw_data %>% 
-    select(leadingtech) %>%
-    gather(key,value) %>% 
-    filter(value==1) %>%
-    group_by(key) %>% 
-    summarise(n = n())
-
-skill_ct
-```
-
-
-```{r polar-split, echo=TRUE}
-
+```{r polar-split, echo=TRUE,warning=FALSE}
 # gather() takes leadingtech as multiple columns and gathers them into key-value pairs to make “wide” data longer
 # group_by_ groups the data by leadingtech
 # summarise the results by leadingtech counts for all 3 job types data_analyst, data_engineer and data_scientist
@@ -263,7 +249,7 @@ skill_ct
 # set the theme
 
 polar_split <- raw_data %>% 
-  gather(key, value, leadingtech) %>% 
+  gather(key, value, all_of(leadingtech)) %>% 
   group_by_("Job_Type", "key")  %>% 
   summarise(count = sum(value)) %>% 
   ggplot() + 
@@ -283,6 +269,9 @@ polar_split <- raw_data %>%
 polar_split
 
 ```
+
+### Conclusion:
+Since we used a curated dataset, our analysis was restricted to the quality of the raw dataset.  One thing that was limiting, was that the salary information was listed as categorical data in ranges (<$80,000,$80,000-$99,999, etc.).  These ranges are pretty large and it would've been nicer to have salary be a contious variable, so analysis could be more detailed.
 
 
 
