@@ -243,6 +243,8 @@ grid.arrange(a,b,nrow=1,top = "Top Skills Across Industry for Data Scientist Job
 
 #### Additional Visualizations
 
+Finally let's do a comparitive study for all 3 Job Types: data_analyst, data_engineer and data_scientist and the data science skills. The data shows Data Scientist has mostly all the skills of Data Analyst and Data Engineer. It would be interesting to know what 'Others' skill includes.
+
 ```{r polar-split, echo=TRUE,warning=FALSE}
 # gather() takes leadingtech as multiple columns and gathers them into key-value pairs to make “wide” data longer
 # group_by_ groups the data by leadingtech
