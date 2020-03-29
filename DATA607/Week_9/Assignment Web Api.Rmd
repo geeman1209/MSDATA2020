@@ -1,0 +1,57 @@
+---
+title: "Assignment_Web_APIs"
+author: "Gabe Abreu"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(httr)
+library(jsonlite)
+library(knitr)
+library(dplyr)
+library(kableExtra)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment Web APIs
+
+The New York Times web site provides a rich set of APIs, as described here: https://developer.nytimes.com/apis
+You’ll need to start by signing up for an API key.
+Your task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and
+transform it into an R DataFrame.
+
+
+```{r api}
+
+key <-"api-key=7JkryTK6qJXaJF2SnUShiuAWlzRW0C2d"
+    
+url <- paste("https://api.nytimes.com/svc/topstories/v2/us.json?", key, sep="")
+
+response <- GET(url)
+
+#Should be 200
+status_code(response)
+
+headers(response)
+
+results <- fromJSON(url)
+
+df_result <- results$results
+
+head(df_result)
+
+#Limit my selection
+df2 <- df_result %>% select(section, title, abstract, byline, contains("date"))
+
+
+#Display table of top articles
+df2 %>%
+  kable() %>%
+  kable_styling()
+ 
+```
+
+
+
+

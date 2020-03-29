@@ -1,0 +1,80 @@
+---
+title: "Tidyverse - Pivot"
+author: "Gabe Abreu"
+date: "3/26/2020"
+output: html_document
+---
+
+## Pivot Vignette
+
+This vignette will cover the pivot_longer and pivot_wider functions. These functions are an alternative to gather() and spread() while incorporating features from other packages.  
+
+The gather and spread functions are used to "tidy" data, rearranging data that should be in rows in the columns or vice versa. Gather() moves columns into rows while the spread() function moves rows into columns.
+
+These functions are great, however, the syntax is not easy to remember and takes multiple tries to get it right. The functions pivot_longer() and pivot_wider() are meant to replace gather() and spread(), in a more intuitive way. 
+
+```{r setup, include=TRUE}
+library(tidyr)
+library(dplyr)
+library(readr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The dataset used to demonstrate pivot functions is the drug-use-by-age dataset from 538. 
+
+## Load Data
+
+```{r}
+drug_df_0 =  read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/drug-use-by-age/drug-use-by-age.csv")
+```
+
+### Glimpse the Data
+
+```{r}
+
+glimpse(drug_df_0)
+
+```
+
+Now, lets introduce the pivot_longer() function. As the name impllies, it makes datasets longer by increasing the number of rows and decreasing the number of columns. Let's imagine we only care about total drug users per category and not frequency. In this dataset, frequency is a character type and we would need to convert to dbl in order to use the function. 
+
+### Pivot_longer()
+
+```{r}
+
+#Let's clean the data and get rid of the unnecessary columns
+drug_df <- drug_df_0[,-c(4,6,8,10,12,14,16,18,20,22,24,26,28)]
+
+drug_df_morphin_time <- drug_df %>% pivot_longer(-c(age, n), names_to = "Drugs", values_to = "User_%" )
+
+drug_df_morphin_time
+```
+In the above example, I chose to create a new data frame but that was a personal preference not mandatory for the use of the pivot_longer function.
+
+- The first step is to pass the dataset you wish to change. 
+- If you wish to exlude any column from being turned into rows, use "-". So, in my case, "-c(age,n)" means use all columns EXCEPT age and n.
+- names_to takes gives the name to the column containing all the old column  names that are now rows.
+- values_to is the name given to the column containing all the values those old columns contained.
+
+
+
+### Pivot_wider()
+
+To illustrate the pivot_wider function, we are going to revert the dataset back to wide.
+
+```{r}
+
+drug_df_widen <- drug_df_morphin_time %>% pivot_wider(names_from = `Drugs`, values_from = `User_%` )
+drug_df_widen
+```
+The new dataset is the original dataset. 
+
+- In this case, we do not wan to exclude columns.
+- The column names are going to be generated from the values in the names_from column
+- The values that are going to populate the new rows are originating from the values_from column. 
+
+There are more complicated uses of pivot_longer() and pivot_wider(). Further exploration of the pivot functions can be found here:
+
+https://tidyr.tidyverse.org/articles/pivot.html
+
+But even at it's most basic use, the pivot functions are intuitive and easy to use. 
