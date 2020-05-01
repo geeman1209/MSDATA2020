@@ -1,0 +1,79 @@
+---
+title: "Final Project"
+author: "Devin Teran, Gabe Abreu, Amit Kapoor, Subhalaxmi Rout"
+date: "4/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+library(rvest)
+library(stringr)
+library(purrr)
+library(tidytext)
+```
+
+```{r get_urls}
+base_url <- 'https://www.whitehouse.gov/briefings-statements/remarks-president-trump-vice-president-pence-members-coronavirus-task-force-press-briefing-'
+
+getPageURLs <- function(url) {
+   add_number <- seq(2,33)
+   urls <- str_c(base_url, add_number)
+   return(urls)
+}
+
+urls <- getPageURLs(urls)
+```
+
+```{r get-data}
+wh_briefings <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_text())
+ 
+```
+
+```{r list-to-dataframe}
+data <- data.frame(text=character(),
+                   Day=integer(),
+                 stringsAsFactors=FALSE)
+
+for (i in 1:length(wh_briefings)){
+  data <- rbind(data,cbind(as.data.frame(unlist(wh_briefings[[i]]),stringsAsFactors = FALSE),i))
+}
+
+colnames(data) <- c('text','day')
+```
+
+```{r create-stop-word-list}
+custom_stop_words <- bind_rows(tibble(word = c("EDT"), 
+                                      lexicon = c("custom")), 
+                               stop_words)
+
+custom_stop_words
+```
+```{r clean-data}
+tidy_data <- data %>%
+  mutate(linenumber = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+
+
+```{r apply lexicon analysis}
+afinn <- get_sentiments("afinn") 
+
+tidy_data %>%
+  anti_join(stop_words) %>%
+  group_by(day) %>%
+  inner_join(afinn) %>%
+  count(word, sort = TRUE) %>%
+  arrange(day,-n)
+```
+
+#Resource:  
+  
+* [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
+* [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
