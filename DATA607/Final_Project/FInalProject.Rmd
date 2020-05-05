@@ -15,6 +15,9 @@ library(rvest)
 library(stringr)
 library(purrr)
 library(tidytext)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 ```{r get_urls}
@@ -72,6 +75,90 @@ tidy_data %>%
   count(word, sort = TRUE) %>%
   arrange(day,-n)
 ```
+
+
+
+```{r affin, echo=TRUE}
+affinLex <- get_sentiments("afinn")
+wf.affin <- tidy_data %>% 
+  anti_join(stop_words) %>% 
+  group_by(day) %>%
+  inner_join(affinLex) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method="affin")
+
+wf.affin
+```
+
+
+```{r bing, echo=TRUE}
+bingLex <- get_sentiments("bing")
+wf.bing <- tidy_data %>% 
+  anti_join(stop_words) %>% 
+  group_by(day) %>%
+  inner_join(bingLex) %>% 
+  count(day, sentiment) %>% 
+  spread(sentiment, n, fill=0) %>% 
+  mutate(sentiment = positive - negative) %>%
+  mutate(method="bing")
+
+wf.bing
+```
+
+```{r nrc, echo=TRUE}
+nrcLex <- get_sentiments("nrc")
+wf.nrc <- tidy_data %>% 
+  anti_join(stop_words) %>% 
+  group_by(day) %>%
+  inner_join(nrcLex) %>% 
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(day, sentiment) %>% 
+  spread(sentiment, n, fill=0) %>% 
+  mutate(sentiment = positive - negative) %>%
+  mutate(method="nrc")
+
+wf.nrc
+```
+
+
+```{r plot-all, echo=TRUE}
+wf.aff_bin_nrc <- bind_rows(wf.affin, wf.bing, wf.nrc)
+bind_rows(wf.aff_bin_nrc) %>%
+  ggplot(aes(day, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
+
+```{r}
+
+wf.aff_bin_nrc %>% 
+  group_by(method) %>% 
+  summarise(sentiment = sum(sentiment)) %>% 
+  ggplot(aes(method, sentiment, fill = method)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=sentiment), position=position_dodge(width=0.9), vjust=-0.25)
+```
+
+
+
+```{r}
+wf.aff_bin_nrc %>% 
+  ggplot(aes(x=day, y=sentiment, group=method, color=method)) + 
+  geom_line(size=1) + 
+  geom_point() + labs(x="day", y="sentiment", title = "Sentiment vs Days for all 3 lexicons") + 
+  scale_color_manual(values=c("red", "green", "blue"))
+```
+
+
+
+
+
+
+
+
+
 
 #Resource:  
   
