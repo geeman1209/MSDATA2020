@@ -10,7 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r cars}
+```{r}
+library(twitteR)
+library(quantmod)
 library(rvest)
 library(stringr)
 library(purrr)
@@ -18,6 +20,24 @@ library(tidytext)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+```
+
+```{r get_Twitter}
+consumer_key <- "Lsk1wfKakbL6rfFC1dcLfpSrb"
+consumer_secret <- "rKywBX5uJ3d13drP8NxgWGxC3TtPraKZiucS58J2OzFW0Rpcci"
+access_token <- "1257449305616650243-J8E4TpO0Fmu6v5KXyY8T9owgSsPI7v"
+access_secret <- "tgCzUd7fXgnSZFrLvmeMBYNJzH3i1hZkDX16PK3APkM3E"
+
+#now lets connect
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+# We can request only 3200 tweets
+trump_tweets <- twitteR::searchTwitter("realDonaldTrump", n = 3200, since = "2020-03-16")
+trump_tweets_df <- tbl_df(purrr::map_df(trump_tweets, as.data.frame))
+tweets <- trump_tweets_df %>%
+  select(id, statusSource, text, created)
+DT::datatable(tweets)
+
 ```
 
 ```{r get_urls}
@@ -34,19 +54,44 @@ urls <- getPageURLs(urls)
 
 ```{r get-data}
 wh_briefings <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_text())
+wh_dates <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_node("time") %>% html_text())
  
 ```
 
+
+```{r clean-dates}
+testFrame <- data.frame(date = character(),
+                        stringsAsFactors = FALSE)
+
+
+for (i in 1:length(wh_dates)){
+  testFrame <- rbind(testFrame,cbind(as.data.frame(unlist(wh_dates[[i]]),stringsAsFactors = FALSE),i))
+}
+
+dateFrame <- na.omit(testFrame)
+
+```
+
 ```{r list-to-dataframe}
-data <- data.frame(text=character(),
+data0 <- data.frame(text=character(),
                    Day=integer(),
                  stringsAsFactors=FALSE)
 
 for (i in 1:length(wh_briefings)){
-  data <- rbind(data,cbind(as.data.frame(unlist(wh_briefings[[i]]),stringsAsFactors = FALSE),i))
+  data0 <- rbind(data0,cbind(as.data.frame(unlist(wh_briefings[[i]]),stringsAsFactors = FALSE),i))
 }
 
-colnames(data) <- c('text','day')
+colnames(data0) <- c('text','day')
+```
+
+```{r}
+
+correctMatch <- inner_join(dateFrame,data0,by= c("i" = "day"))
+correctMatch <- correctMatch[,-2]
+colnames(correctMatch) <- c('day', 'text')
+
+data <- correctMatch
+
 ```
 
 ```{r create-stop-word-list}
@@ -153,10 +198,31 @@ wf.aff_bin_nrc %>%
 
 
 
+** Stock Market Data
+
+```{r}
+
+start<- as.Date("2020-03-15")
+end <- as.Date("2020-04-27")
 
 
+#Retrieving information on Top 5 Small Growth Funds as ranked by "U.S. News"
+smallCapFunds <- c("PSGAX", "FKASX", "PGSGX", "QUASX", "TRSSX")
+getSymbols(smallCapFunds, src = "yahoo", from = start, to = end)
+
+#Retreiving information on Top 5 Mid Growth Funds as ranked by "U.S. News"
+midCapFunds <- c("DFDMX", "CCSMX","PRDMX", "OTCAX", "BMGAX")
+getSymbols(midCapFunds, src = "yahoo", from = start, to = end)
+
+#Retrieving information on Top 5 Large Growth Funds as ranked by "U.s News"
+largeCapFunds <- c("TRLGX", "PREFX", "TPLGX", "FDSVX", "PBLAX")
+getSymbols(largeCapFunds, src = "yahoo", from = start, to = end)
 
 
+#Retrieve Dow Jones Industrial Average
+getSymbols("DJIA", src = "yahoo", from = start, to = end)
+
+```
 
 
 
