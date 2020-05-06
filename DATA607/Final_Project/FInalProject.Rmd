@@ -87,8 +87,7 @@ colnames(data0) <- c('text','day')
 ```{r}
 
 correctMatch <- inner_join(dateFrame,data0,by= c("i" = "day"))
-correctMatch <- correctMatch[,-2]
-colnames(correctMatch) <- c('day', 'text')
+colnames(correctMatch) <- c('date', 'day', 'text')
 
 data <- correctMatch
 
