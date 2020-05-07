@@ -260,7 +260,178 @@ References
 - Twitter react to the Coronavirus pandemic: https://towardsdatascience.com/how-did-twitter-react-to-the-coronavirus-pandemic-2857592b449a
 
 
+## Data Source 3
 
+We collect data from Yahoo Finance site using `tidyquant` package. By default quantmod download and stores the symbols with their own names.
 
+Here we will show the stock performance of S&P 500, Dow Jones30, NASDAQ, and Russel2000 from April 1 to April 30. 
 
+We choose 3 levels of stocks such as High level, Medium Level, and Low level. We will select 5 companies from each category and will display their stocks from April 1 to April 30.
 
+High level stocks companies:
+
++ Apple
++ Netflix
++ Amazon
++ Microsoft
++ Google
+
+Medium level stocks companies:
+
++ Atlassian 
++ 4imprint Inc.
++ Etsy
++ Cirrus Logic
++ HotSpot
+
+And, Low level stocks companies:
+
++ SolarWinds Corporation
++ Sturm, Ruger & Company, Inc.
++ Steven Madden, Ltd.
++ IPG Photonics Corporation
++ Winmark Corporation
+
+Here we will see stock performace of S&P 500, Dow30, NASDAQ and Russel2000 from April 1 to April 30.
+
+Load necessary libraries.
+
+### Stock performance of S&P 500, Dow30, NASDAQ and Russel 2000
+
+```{r message=FALSE, warning=FALSE}
+library(tidyquant)
+library(DT)
+library(dplyr)
+library(ggplot2)
+
+tickers = c( "^GSPC", "^DJI","^IXIC", "^RUT")
+
+prices <- tq_get(tickers,
+           from = "2020-04-01",
+           to = "2020-04-30",
+           get = "stock.prices")
+
+prices %>%
+  dplyr::group_by(symbol) %>%
+  slice(1)
+
+prices %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line()
+
+DT::datatable(prices)
+
+prices %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line() +
+  facet_wrap(~symbol,scales = 'free_y') +
+  theme_classic() +
+  labs(x = 'Date',
+       y = "Adjusted Price",
+       title = "Price Chart") +
+  scale_x_date(date_breaks = "week",
+               date_labels = "%b %d")
+
+```
+
+###  Stock performance of Apple, Netflix, Amazon, Microsoft, and Google
+
+```{r message=FALSE, warning=FALSE}
+tickers = c("AAPL", "NFLX", "AMZN", "MSFT", "GOOG")
+
+prices_hi <- tq_get(tickers,
+           from = "2020-04-01",
+           to = "2020-04-30",
+           get = "stock.prices")
+
+prices_hi %>%
+  dplyr::group_by(symbol) %>%
+  slice(1)
+
+prices_hi %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line()
+
+DT::datatable(prices_hi)
+
+prices_hi %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line() +
+  facet_wrap(~symbol,scales = 'free_y') +
+  theme_classic() +
+  labs(x = 'Date',
+       y = "Adjusted Price",
+       title = "Price Chart") +
+  scale_x_date(date_breaks = "week",
+               date_labels = "%b %d")
+```
+
+### Stock performance of Atlassian, 4imprint Inc , Etsy, Cirrus Logic, and HotSpot 
+
+```{r message=FALSE, warning=FALSE}
+tickers = c("TEAM", "FOUR.L", "ETSY", "CRUS", "HUBS")
+
+prices_med <- tq_get(tickers,
+           from = "2020-04-01",
+           to = "2020-04-30",
+           get = "stock.prices")
+
+prices_med %>%
+  dplyr::group_by(symbol) %>%
+  slice(1)
+
+prices_med %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line()
+
+DT::datatable(prices_med)
+
+prices_med %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line() +
+  facet_wrap(~symbol,scales = 'free_y') +
+  theme_classic() +
+  labs(x = 'Date',
+       y = "Adjusted Price",
+       title = "Price Chart") +
+  scale_x_date(date_breaks = "week",
+               date_labels = "%b %d")
+```
+
+### Stock performance of SolarWinds Corporation, Sturm Ruger & Company , Steven Madden, IPG Photonics Corporation, and Winmark Corporation
+
+```{r message=FALSE, warning=FALSE}
+tickers = c("SWI", "RGR", "SHOO", "IPGP", "WINA")
+
+prices_low <- tq_get(tickers,
+           from = "2020-04-01",
+           to = "2020-04-30",
+           get = "stock.prices")
+
+prices_low %>%
+  dplyr::group_by(symbol) %>%
+  slice(1)
+
+prices_low %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line()
+
+DT::datatable(prices_low)
+
+prices_low %>%
+  ggplot(aes(x = date, y = adjusted, color = symbol)) +
+  geom_line() +
+  facet_wrap(~symbol,scales = 'free_y') +
+  theme_classic() +
+  labs(x = 'Date',
+       y = "Adjusted Price",
+       title = "Price Chart") +
+  scale_x_date(date_breaks = "week",
+               date_labels = "%b %d")
+```
+
+### Summary
+
+In April, above mentioned all stock has fluctuated. One common pattern we can say 1st and 2nd week of April stocks are doing good then in the 3rd week drastically falls down and in the 4th week again going up. 
+
+Reference: https://www.codingfinance.com/post/2018-03-27-download-price/
