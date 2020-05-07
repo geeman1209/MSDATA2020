@@ -37,7 +37,6 @@ Load necessary packages and collect the data from twitter and store as a CSV fil
 ```{r message=FALSE, warning=FALSE}
 library(twitteR)
 library(tidyr)
-library(xlsx)
 
 consumer_key <- "Lsk1wfKakbL6rfFC1dcLfpSrb"
 consumer_secret <- "rKywBX5uJ3d13drP8NxgWGxC3TtPraKZiucS58J2OzFW0Rpcci"
