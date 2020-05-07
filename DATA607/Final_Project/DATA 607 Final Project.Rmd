@@ -430,7 +430,7 @@ prices_low %>%
                date_labels = "%b %d")
 ```
 
-### Summary
+### Conclusion
 
 In April, above mentioned all stock has fluctuated. One common pattern we can say 1st and 2nd week of April stocks are doing good then in the 3rd week drastically falls down and in the 4th week again going up. 
 
