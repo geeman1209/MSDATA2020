@@ -2,15 +2,36 @@
 title: "Final Project"
 author: "Devin Teran, Gabe Abreu, Amit Kapoor, Subhalaxmi Rout"
 date: "4/27/2020"
-output: html_document
+output: rmdformats::readthedown
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Research Objective
+Trump’s presidency is unique from other presidents in the manner he communicates public and economic policy via social media. We want to examine whether his remarks during this global pandemic (Mid March through April 2020) have tangible effects on the stock market.  We’re going to analyze the text from daily White House briefings using sentiment analysis. Compare and contrast the sentiment analysis with the stock market performance during his presidency and Trump's approval ratings.
 
+## Data Sources:   
+* White House Briefings - each weekday President Trump addresses the nation and those scripts can be found on []()
+* Stock Market Data - this data was extracted using the **quantmod** to obtain small, mid and large Cap funds
+* Trump Approval Ratings - this shows daily approval ratings from [FiveThirtyEight](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 
-```{r message=FALSE, warning=FALSE}
+## Necessary R Packages:
+The following libraries are used throughout our analysis:
+
+* **twitteR**
+* **quantmod** 
+* **rvest** 
+* **stringr**
+* **purr** 
+* **tidytext**
+* **dplyr**
+* **tidyr**
+* **ggplot2**
+* **lubridate**
+* **RCurl**
+
+```{r message=FALSE, include = FALSE, warning=FALSE}
 library(twitteR)
 library(quantmod)
 library(rvest)
@@ -22,11 +43,13 @@ library(tidyr)
 library(ggplot2)
 library(lubridate)
 library(RCurl)
+library(egg)
 ```
 
-
-
-```{r get_urls}
+# Gather Data  
+## Daily Presidential White House Briefings
+These URLs all end in a number so we're going to first create a list of URLs & use **read_html** to grab the **< p > tags** for each page  
+```{r gather_wh_briefing_urls}
 base_url <- 'https://www.whitehouse.gov/briefings-statements/remarks-president-trump-vice-president-pence-members-coronavirus-task-force-press-briefing-'
 
 getPageURLs <- function(url) {
@@ -36,19 +59,65 @@ getPageURLs <- function(url) {
 }
 
 urls <- getPageURLs(urls)
+head(urls)
 ```
 
-```{r get-data}
+```{r gather-wh-data}
 wh_briefings <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_text())
 wh_dates <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_node("time") %>% html_text())
- 
+
+```
+
+## Stock Market Data
+We decided it would be best to compare smallCapFunds, midCapFunds, and largeCapFunds.
+```{r gather-stock-market-data,warnings=FALSE,messages=FALSE}
+start<- as.Date("2020-03-15")
+end <- as.Date("2020-04-27")
+
+
+#Retrieving information on Top 5 Small Growth Funds as ranked by "U.S. News"
+smallCapFunds <- c("PSGAX", "FKASX", "PGSGX", "QUASX", "TRSSX")
+getSymbols(smallCapFunds, src = "yahoo", from = start, to = end)
+
+#Retreiving information on Top 5 Mid Growth Funds as ranked by "U.S. News"
+midCapFunds <- c("DFDMX", "CCSMX","PRDMX", "OTCAX", "BMGAX")
+getSymbols(midCapFunds, src = "yahoo", from = start, to = end)
+
+#Retrieving information on Top 5 Large Growth Funds as ranked by "U.s News"
+largeCapFunds <- c("TRLGX", "PREFX", "TPLGX", "FDSVX", "PBLAX")
+getSymbols(largeCapFunds, src = "yahoo", from = start, to = end)
+
+
+#Retrieve Dow Jones Industrial Average
+getSymbols("DJIA", src = "yahoo", from = start, to = end)
+
+# glimpse data
+dplyr::glimpse(PSGAX)
+```
+
+## [Trump Approval Ratings](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+These ratings were available on FiveThiryEight broken out by Votes,Adults, and All Polls for each day during April 2020.
+```{r gather-trump-appr, echo=TRUE, warning=FALSE}
+
+#github URL
+theURL <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Final_Project/approval_topline.csv")
+# Read csv from github
+trump_apprdf <- read.csv(text = theURL,stringsAsFactors = FALSE)
+# glimpse data
+dplyr::glimpse(trump_apprdf)
+
 ```
 
 
-```{r clean-dates}
+# Cleaning Data 
+
+## Clean WH Briefing Data
+In order to easily analyze the WH briefings, we needed to include a date in the format 'yyyy-mm-dd' in addition to our number page number, i.  The page number correlates with the last character of the page URL.
+```{r clean-wh-briefing-dates}
+
+#create empty dataframe
 testFrame <- data.frame(date = character(),
                         stringsAsFactors = FALSE)
-
 
 for (i in 1:length(wh_dates)){
   testFrame <- rbind(testFrame,cbind(as.data.frame(unlist(wh_dates[[i]]),stringsAsFactors = FALSE),i))
@@ -75,27 +144,45 @@ colnames(data0) <- c('text','day')
 correctMatch <- inner_join(dateFrame,data0,by= c("i" = "day"))
 colnames(correctMatch) <- c('date', 'day', 'text')
 
-data <- correctMatch
+wh_data <- correctMatch
 
 ```
 
-```{r create-stop-word-list}
+```{r clean-data}
+tidy_data <- wh_data %>%
+  mutate(linenumber = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+head(tidy_data)
+```
+
+## Clean Approval Ratings
+```{r date, echo=TRUE, warning=FALSE}
+
+# modeldate - convert into date
+trump_apprdf$modeldate <- mdy(trump_apprdf$modeldate)
+dplyr::glimpse(trump_apprdf)
+```
+
+```{r filter-apr, echo=TRUE, warning=FALSE}
+
+# filter data for April , 2020
+trump_apprsubdf <- trump_apprdf %>% 
+  filter(modeldate >= as.Date("2020-04-01"))
+```
+
+# Data Analysis
+## White House Briefing & Sentiment Analysis
+```{r create-stop-word-list,include=FALSE}
 custom_stop_words <- bind_rows(tibble(word = c("EDT"), 
                                       lexicon = c("custom")), 
                                stop_words)
 
 custom_stop_words
 ```
-```{r clean-data}
-tidy_data <- data %>%
-  mutate(linenumber = row_number()) %>%
-  ungroup() %>%
-  unnest_tokens(word, text)
-```
 
-
-
-```{r apply lexicon analysis}
+```{r apply lexicon analysis,include=FALSE,include=FALSE}
 afinn <- get_sentiments("afinn") 
 
 tidy_data %>%
@@ -106,10 +193,7 @@ tidy_data %>%
   arrange(day,-n)
 ```
 
-### Sentiment Analysis
-
-```{r affin, echo=TRUE, warning=FALSE}
-
+```{r affin, echo=TRUE, warning=FALSE,include=TRUE}
 # Using lexicon affin
 affinLex <- get_sentiments("afinn")
 wh.affin <- tidy_data %>% 
@@ -122,8 +206,7 @@ wh.affin <- tidy_data %>%
 wh.affin
 ```
 
-
-```{r affin-bar, echo=TRUE, warning=FALSE}
+```{r affin-bar, echo=TRUE, warning=FALSE,include=FALSE}
 
 # bar plot for positive and negative cumulative score
 wh.affin %>% 
@@ -137,7 +220,7 @@ wh.affin %>%
 
 
 
-```{r bing, echo=TRUE, warning=FALSE}
+```{r bing, echo=TRUE, warning=FALSE,include=TRUE}
 
 # Using lexicon bing 
 
@@ -158,7 +241,7 @@ wh.bing
 
 
   
-```{r bing-bar, echo=TRUE, warning=FALSE}
+```{r bing-bar, echo=TRUE, warning=FALSE,include=FALSE}
 
 # bar plot for positive and negative sentiments
 wh.bing %>% 
@@ -176,7 +259,7 @@ wh.bing %>%
 
 
 
-```{r nrc, echo=TRUE, warning=FALSE}
+```{r nrc, echo=TRUE, warning=FALSE,include=TRUE}
 
 # Using lexicon nrc
 
@@ -194,9 +277,32 @@ wh.nrc <- tidy_data %>%
 wh.nrc
 ```
 
-  
-```{r nrc-bar, echo=TRUE, warning=FALSE}
 
+```{r plot-all-lex, echo=TRUE, warning=FALSE}
+
+# Comparing all 3 lexicons
+
+wh.aff_bin_nrc <- bind_rows(wh.affin, wh.bing, wh.nrc)
+bind_rows(wh.aff_bin_nrc) %>%
+  ggplot(aes(day, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
+
+```{r compare-all-lex, echo=TRUE, warning=FALSE,include=FALSE}
+
+# comparing the cumulative sentiments for all 3 lexicons
+wh.aff_bin_nrc %>% 
+  group_by(method) %>% 
+  summarise(sentiment = sum(sentiment)) %>% 
+  ggplot(aes(method, sentiment, fill = method)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=sentiment), position=position_dodge(width=0.9), vjust=-0.25)
+```
+
+```{r nrc-bar, echo=TRUE, warning=FALSE}
 # bar graph for all sentiment categories in nrc lexicon
 tidy_data %>% 
   anti_join(stop_words) %>% 
@@ -215,153 +321,75 @@ tidy_data %>%
 
 ```
 
-
-
-
-```{r plot-all-lex, echo=TRUE, warning=FALSE}
-
-# Comparing all 3 lexicons
-
-wh.aff_bin_nrc <- bind_rows(wh.affin, wh.bing, wh.nrc)
-bind_rows(wh.aff_bin_nrc) %>%
-  ggplot(aes(day, sentiment, fill = method)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~method, ncol = 1, scales = "free_y")
-```
-
-
-
-```{r compare-all-lex, echo=TRUE, warning=FALSE}
-
-# comparing the cumulative sentiments for all 3 lexicons
-wh.aff_bin_nrc %>% 
-  group_by(method) %>% 
-  summarise(sentiment = sum(sentiment)) %>% 
-  ggplot(aes(method, sentiment, fill = method)) +
-  geom_bar(stat="identity") +  
-  geom_text(aes(label=sentiment), position=position_dodge(width=0.9), vjust=-0.25)
-```
-
-
-
-```{r plot-line-all, echo=TRUE, warning=FALSE}
+```{r plot-line-all, echo=TRUE, warning=FALSE,include=FALSE}
 
 # line graph for all 3 lexicons
 wh.aff_bin_nrc %>% 
   ggplot(aes(x=day, y=sentiment, group=method, color=method)) + 
   geom_line(size=1) + 
   geom_point() + labs(x="day", y="sentiment", title = "Sentiment vs Days for all 3 lexicons") + 
-  scale_color_manual(values=c("red", "green", "blue"))
+  scale_color_manual(values=c("red", "green", "blue")) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r daily-nrc-sentiment-plot-1, echo=TRUE, warning=FALSE,messages=FALSE}
+a <- tidy_data %>% 
+  anti_join(stop_words) %>% 
+  inner_join(nrcLex) %>% 
+  count(day, sentiment) %>% 
+  spread(sentiment, n, fill=0) %>% 
+  gather(variable, value, c('positive','trust')) %>% 
+  ggplot(aes(day, value,  color = variable,fill = variable)) +
+  geom_line(stat="identity") +
+  ylab('Sentiment') 
+
+b <- tidy_data %>% 
+  anti_join(stop_words) %>% 
+  inner_join(nrcLex) %>% 
+  count(day, sentiment) %>% 
+  spread(sentiment, n, fill=0) %>% 
+  gather(variable, value, c('anger','anticipation','disgust','fear','joy','negative','sadness','surprise')) %>% 
+  ggplot(aes(day, value,  color = variable,fill = variable)) +
+  geom_line(stat="identity") +
+  ylab('Sentiment') 
+
+ggarrange(a, b, ncol=1,top = "White House Briefings - Daily Sentiment by Categories Using NRC")
+
 ```
 
 
 
-** Stock Market Data
-
-```{r}
-
-start<- as.Date("2020-03-15")
-end <- as.Date("2020-04-27")
-
-
-#Retrieving information on Top 5 Small Growth Funds as ranked by "U.S. News"
-smallCapFunds <- c("PSGAX", "FKASX", "PGSGX", "QUASX", "TRSSX")
-getSymbols(smallCapFunds, src = "yahoo", from = start, to = end)
-
-#Retreiving information on Top 5 Mid Growth Funds as ranked by "U.S. News"
-midCapFunds <- c("DFDMX", "CCSMX","PRDMX", "OTCAX", "BMGAX")
-getSymbols(midCapFunds, src = "yahoo", from = start, to = end)
-
-#Retrieving information on Top 5 Large Growth Funds as ranked by "U.s News"
-largeCapFunds <- c("TRLGX", "PREFX", "TPLGX", "FDSVX", "PBLAX")
-getSymbols(largeCapFunds, src = "yahoo", from = start, to = end)
-
-
-#Retrieve Dow Jones Industrial Average
-getSymbols("DJIA", src = "yahoo", from = start, to = end)
-
-```
-
-
-### Datasource :: Trump approval rating: https://projects.fivethirtyeight.com/trump-approval-ratings/
-
-```{r trump-appr, echo=TRUE, warning=FALSE}
-
-#github URL
-theURL <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Final_Project/approval_topline.csv")
-# Read csv from github
-trump_apprdf <- read.csv(text = theURL,stringsAsFactors = FALSE)
-# glimpse data
-dplyr::glimpse(trump_apprdf)
-
-```
-
-
-```{r date, echo=TRUE, warning=FALSE}
-
-# modeldate - convert into date
-trump_apprdf$modeldate <- mdy(trump_apprdf$modeldate)
-dplyr::glimpse(trump_apprdf)
-```
-
-```{r filter-apr, echo=TRUE, warning=FALSE}
-
-# filter data for April , 2020
-trump_apprsubdf <- trump_apprdf %>% 
-  filter(modeldate >= as.Date("2020-04-01"))
-```
-
-
-```{r approval-bar, echo=TRUE, warning=FALSE}
-
-# Approval bar plot for all 3 sub groups  
-ggplot(trump_apprsubdf, aes(x=modeldate,y=approve_estimate,fill=subgroup)) +
-  geom_bar(stat="identity", position = 'dodge') +
-  xlab('Date') +
-  ylab('Approval estimates') + 
-  ggtitle('Trump approval estimates for April 2020') +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  theme(axis.text.x = element_text(angle = 90)) 
-```
-
-
-```{r approval-line, echo=TRUE, warning=FALSE}
+```{r approval-and-disapproval-line, echo=TRUE, warning=FALSE}
+# Disapproval line plot for all 3 sub groups  
+disapprove <- trump_apprsubdf %>% 
+  ggplot(aes(x=modeldate,y=disapprove_estimate, group=subgroup, color=subgroup)) + 
+  geom_line(size=1) + 
+  geom_point() + labs(x="Date", y="Disapproval estimates", title = "") + 
+  scale_color_manual(values=c("red", "green", "blue")) +
+  ggtitle('Trump disapproval estimates for April 2020')+
+  theme(plot.title = element_text(hjust = 0.5))
 
 # Approval line plot for all 3 sub groups  
-trump_apprsubdf %>% 
+approve <- trump_apprsubdf %>% 
   ggplot(aes(x=modeldate,y=approve_estimate, group=subgroup, color=subgroup)) + 
   geom_line(size=1) + 
   geom_point() + labs(x="Date", y="Approval estimates", title = "") + 
-  scale_color_manual(values=c("red", "green", "blue"))
-```
+  scale_color_manual(values=c("red", "green", "blue")) +
+  ggtitle('Trump approval estimates for April 2020')+
+  theme(plot.title = element_text(hjust = 0.5))
 
-```{r disapproval-bar, echo=TRUE, warning=FALSE}
+ggarrange(approve, disapprove, ncol=1)
 
-# Disapproval bar plot for all 3 sub groups  
-ggplot(trump_apprsubdf, aes(x=modeldate,y=disapprove_estimate,fill=subgroup)) +
-  geom_bar(stat="identity", position = 'dodge') +
-  xlab('Date') +
-  ylab('Disapproval estimates') + 
-  ggtitle('Trump disapproval estimates for April 2020') +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  theme(axis.text.x = element_text(angle = 90)) 
 ```
 
 
-```{r disapproval-line, echo=TRUE, warning=FALSE}
+# Challenges:  
+* Incorpating such different data into one graph for comparison
+* Twitter data was only available for the past 8 days, so we were unable to chart this data over time
 
-# Disapproval line plot for all 3 sub groups 
-trump_apprsubdf %>% 
-  ggplot(aes(x=modeldate, y=disapprove_estimate, group=subgroup, color=subgroup)) + 
-  geom_line(size=1) + 
-  geom_point() + labs(x="Date", y="Disapproval estimates", title = "") + 
-  scale_color_manual(values=c("red", "green", "blue"))
-```
-
-
-
-
-#Resource:  
+#Resources:  
   
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
 * [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
+* [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+
