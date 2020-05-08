@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(twitteR)
 library(quantmod)
 library(rvest)
@@ -20,25 +20,11 @@ library(tidytext)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(lubridate)
+library(RCurl)
 ```
 
-```{r get_Twitter}
-consumer_key <- "Lsk1wfKakbL6rfFC1dcLfpSrb"
-consumer_secret <- "rKywBX5uJ3d13drP8NxgWGxC3TtPraKZiucS58J2OzFW0Rpcci"
-access_token <- "1257449305616650243-J8E4TpO0Fmu6v5KXyY8T9owgSsPI7v"
-access_secret <- "tgCzUd7fXgnSZFrLvmeMBYNJzH3i1hZkDX16PK3APkM3E"
 
-#now lets connect
-setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
-
-# We can request only 3200 tweets
-trump_tweets <- twitteR::searchTwitter("realDonaldTrump", n = 3200, since = "2020-03-16")
-trump_tweets_df <- tbl_df(purrr::map_df(trump_tweets, as.data.frame))
-tweets <- trump_tweets_df %>%
-  select(id, statusSource, text, created)
-DT::datatable(tweets)
-
-```
 
 ```{r get_urls}
 base_url <- 'https://www.whitehouse.gov/briefings-statements/remarks-president-trump-vice-president-pence-members-coronavirus-task-force-press-briefing-'
@@ -120,24 +106,43 @@ tidy_data %>%
   arrange(day,-n)
 ```
 
+### Sentiment Analysis
 
+```{r affin, echo=TRUE, warning=FALSE}
 
-```{r affin, echo=TRUE}
+# Using lexicon affin
 affinLex <- get_sentiments("afinn")
-wf.affin <- tidy_data %>% 
+wh.affin <- tidy_data %>% 
   anti_join(stop_words) %>% 
   group_by(day) %>%
   inner_join(affinLex) %>% 
   summarise(sentiment = sum(value)) %>% 
   mutate(method="affin")
 
-wf.affin
+wh.affin
 ```
 
 
-```{r bing, echo=TRUE}
+```{r affin-bar, echo=TRUE, warning=FALSE}
+
+# bar plot for positive and negative cumulative score
+wh.affin %>% 
+  summarise(Positive = sum(sentiment[sentiment>0]), Negative = sum(sentiment[sentiment<0])) %>% 
+  gather(variable, value, Positive:Negative) %>% 
+  ggplot(aes(variable, value,  fill = variable)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=value), position=position_dodge(width=0.9), vjust=-0.25)
+```
+
+
+
+
+```{r bing, echo=TRUE, warning=FALSE}
+
+# Using lexicon bing 
+
 bingLex <- get_sentiments("bing")
-wf.bing <- tidy_data %>% 
+wh.bing <- tidy_data %>% 
   anti_join(stop_words) %>% 
   group_by(day) %>%
   inner_join(bingLex) %>% 
@@ -146,12 +151,37 @@ wf.bing <- tidy_data %>%
   mutate(sentiment = positive - negative) %>%
   mutate(method="bing")
 
-wf.bing
+wh.bing
 ```
 
-```{r nrc, echo=TRUE}
+  
+
+
+  
+```{r bing-bar, echo=TRUE, warning=FALSE}
+
+# bar plot for positive and negative sentiments
+wh.bing %>% 
+  ungroup() %>%
+  select(-day) %>% 
+  select(negative, positive) %>% 
+  summarise_all(funs(sum)) %>% 
+  gather(variable, value, negative:positive) %>% 
+  ggplot(aes(variable, value,  fill = variable)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=value), position=position_dodge(width=0.9), vjust=-0.25)
+
+```
+
+
+
+
+```{r nrc, echo=TRUE, warning=FALSE}
+
+# Using lexicon nrc
+
 nrcLex <- get_sentiments("nrc")
-wf.nrc <- tidy_data %>% 
+wh.nrc <- tidy_data %>% 
   anti_join(stop_words) %>% 
   group_by(day) %>%
   inner_join(nrcLex) %>% 
@@ -161,13 +191,39 @@ wf.nrc <- tidy_data %>%
   mutate(sentiment = positive - negative) %>%
   mutate(method="nrc")
 
-wf.nrc
+wh.nrc
+```
+
+  
+```{r nrc-bar, echo=TRUE, warning=FALSE}
+
+# bar graph for all sentiment categories in nrc lexicon
+tidy_data %>% 
+  anti_join(stop_words) %>% 
+  group_by(day) %>%
+  inner_join(nrcLex) %>% 
+  #filter(sentiment %in% c("positive", "negative")) %>%
+  count(day, sentiment) %>% 
+  spread(sentiment, n, fill=0) %>% 
+  ungroup() %>%
+  select(-day) %>% 
+  summarise_all(funs(sum)) %>% 
+  gather(variable, value, anger:trust) %>% 
+  ggplot(aes(variable, value,  fill = variable)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=value), position=position_dodge(width=0.9), vjust=-0.25)
+
 ```
 
 
-```{r plot-all, echo=TRUE}
-wf.aff_bin_nrc <- bind_rows(wf.affin, wf.bing, wf.nrc)
-bind_rows(wf.aff_bin_nrc) %>%
+
+
+```{r plot-all-lex, echo=TRUE, warning=FALSE}
+
+# Comparing all 3 lexicons
+
+wh.aff_bin_nrc <- bind_rows(wh.affin, wh.bing, wh.nrc)
+bind_rows(wh.aff_bin_nrc) %>%
   ggplot(aes(day, sentiment, fill = method)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~method, ncol = 1, scales = "free_y")
@@ -175,9 +231,10 @@ bind_rows(wf.aff_bin_nrc) %>%
 
 
 
-```{r}
+```{r compare-all-lex, echo=TRUE, warning=FALSE}
 
-wf.aff_bin_nrc %>% 
+# comparing the cumulative sentiments for all 3 lexicons
+wh.aff_bin_nrc %>% 
   group_by(method) %>% 
   summarise(sentiment = sum(sentiment)) %>% 
   ggplot(aes(method, sentiment, fill = method)) +
@@ -187,8 +244,10 @@ wf.aff_bin_nrc %>%
 
 
 
-```{r}
-wf.aff_bin_nrc %>% 
+```{r plot-line-all, echo=TRUE, warning=FALSE}
+
+# line graph for all 3 lexicons
+wh.aff_bin_nrc %>% 
   ggplot(aes(x=day, y=sentiment, group=method, color=method)) + 
   geom_line(size=1) + 
   geom_point() + labs(x="day", y="sentiment", title = "Sentiment vs Days for all 3 lexicons") + 
@@ -222,6 +281,83 @@ getSymbols(largeCapFunds, src = "yahoo", from = start, to = end)
 getSymbols("DJIA", src = "yahoo", from = start, to = end)
 
 ```
+
+
+### Datasource :: Trump approval rating: https://projects.fivethirtyeight.com/trump-approval-ratings/
+
+```{r trump-appr, echo=TRUE, warning=FALSE}
+
+#github URL
+theURL <- getURL("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Final_Project/approval_topline.csv")
+# Read csv from github
+trump_apprdf <- read.csv(text = theURL,stringsAsFactors = FALSE)
+# glimpse data
+dplyr::glimpse(trump_apprdf)
+
+```
+
+
+```{r date, echo=TRUE, warning=FALSE}
+
+# modeldate - convert into date
+trump_apprdf$modeldate <- mdy(trump_apprdf$modeldate)
+dplyr::glimpse(trump_apprdf)
+```
+
+```{r filter-apr, echo=TRUE, warning=FALSE}
+
+# filter data for April , 2020
+trump_apprsubdf <- trump_apprdf %>% 
+  filter(modeldate >= as.Date("2020-04-01"))
+```
+
+
+```{r approval-bar, echo=TRUE, warning=FALSE}
+
+# Approval bar plot for all 3 sub groups  
+ggplot(trump_apprsubdf, aes(x=modeldate,y=approve_estimate,fill=subgroup)) +
+  geom_bar(stat="identity", position = 'dodge') +
+  xlab('Date') +
+  ylab('Approval estimates') + 
+  ggtitle('Trump approval estimates for April 2020') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90)) 
+```
+
+
+```{r approval-line, echo=TRUE, warning=FALSE}
+
+# Approval line plot for all 3 sub groups  
+trump_apprsubdf %>% 
+  ggplot(aes(x=modeldate,y=approve_estimate, group=subgroup, color=subgroup)) + 
+  geom_line(size=1) + 
+  geom_point() + labs(x="Date", y="Approval estimates", title = "") + 
+  scale_color_manual(values=c("red", "green", "blue"))
+```
+
+```{r disapproval-bar, echo=TRUE, warning=FALSE}
+
+# Disapproval bar plot for all 3 sub groups  
+ggplot(trump_apprsubdf, aes(x=modeldate,y=disapprove_estimate,fill=subgroup)) +
+  geom_bar(stat="identity", position = 'dodge') +
+  xlab('Date') +
+  ylab('Disapproval estimates') + 
+  ggtitle('Trump disapproval estimates for April 2020') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90)) 
+```
+
+
+```{r disapproval-line, echo=TRUE, warning=FALSE}
+
+# Disapproval line plot for all 3 sub groups 
+trump_apprsubdf %>% 
+  ggplot(aes(x=modeldate, y=disapprove_estimate, group=subgroup, color=subgroup)) + 
+  geom_line(size=1) + 
+  geom_point() + labs(x="Date", y="Disapproval estimates", title = "") + 
+  scale_color_manual(values=c("red", "green", "blue"))
+```
+
 
 
 
