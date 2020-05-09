@@ -416,7 +416,7 @@ summary(SmLm2)
 plot1 <- tstFrame %>% 
 ggplot(aes(x=Day, y=AvgClose, group=1)) +
     geom_line() +
-    geom_point() + labs(x=" Days", y="Closing Price", title = "Avg of Closing Price for Top 5 Small Cap Funds", subtitle = " March 15, 2020 - April 30, 2020")
+    geom_point() + labs(x=" Days", y="Closing Price", title = "Avg of Closing Price for Top 5 Small Growth Funds", subtitle = " March 15, 2020 - April 30, 2020")
 
 plot2 <- tstFrame %>% 
 ggplot(aes(x=Day, y=Sentiment, group=1)) +
@@ -426,7 +426,82 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 grid.arrange(plot1, plot2, nrow = 2)
 ```
 
+```{r}
+mdFrame <- dateFrame
+colnames(mdFrame) <- c("Date","Day")
 
+mdFrame$DFDMX_Close <- DFDMX$DFDMX.Close
+mdFrame$CCSMX_Close <- CCSMX$CCSMX.Close 
+mdFrame$PRDMX_Close <- PRDMX$PRDMX.Close
+mdFrame$OTCAX_Close <- OTCAX$OTCAX.Close
+mdFrame$BMGAX_Close <- BMGAX$BMGAX.Close
+
+
+mdFrame$Sentiment <- wh.bing$sentiment
+
+```
+
+```{r}
+tst2Frame <- mdFrame
+
+tst2Frame$AvgClose <- (mdFrame$DFDMX_Close + mdFrame$CCSMX_Close + mdFrame$PRDMX_Close + mdFrame$OTCAX_Close + mdFrame$BMGAX_Close)/5
+
+SmLm3 <- lm(AvgClose ~ Sentiment, data= tst2Frame)
+
+summary(SmLm3)
+
+
+plot1 <- tst2Frame %>% 
+ggplot(aes(x=Day, y=AvgClose, group=1)) +
+    geom_line() +
+    geom_point() + labs(x=" Days", y="Closing Price", title = "Avg of Closing Price for Top 5 Mid Growth Funds", subtitle = " March 15, 2020 - April 30, 2020")
+
+plot2 <- tst2Frame %>% 
+ggplot(aes(x=Day, y=Sentiment, group=1)) +
+    geom_line() +
+    geom_point() + labs(x="Days", y="WH Briefing Sentiment", title = "Biin Sentiment Scores over 32 Days of WH Briefings", subtitle = "March 15, 2020 - April 30, 2020")
+
+grid.arrange(plot1, plot2, nrow = 2)
+```
+
+
+```{r}
+lgFrame <- dateFrame
+colnames(lgFrame) <- c("Date","Day")
+
+lgFrame$TRLGX_Close <- TRLGX$TRLGX.Close
+lgFrame$PREFX_Close <- PREFX$PREFX.Close 
+lgFrame$TPLGX_Close <- TPLGX$TPLGX.Close
+lgFrame$FDSVX_Close <- FDSVX$FDSVX.Close
+lgFrame$PBLAX_Close <- PBLAX$PBLAX.Close
+
+
+lgFrame$Sentiment <- wh.bing$sentiment
+
+```
+
+```{r}
+tst3Frame <- lgFrame
+
+tst3Frame$AvgClose <- (TRLGX$TRLGX.Close + PREFX$PREFX.Close + TPLGX$TPLGX.Close + FDSVX$FDSVX.Close + PBLAX$PBLAX.Close)/5
+
+SmLm4 <- lm(AvgClose ~ Sentiment, data= tst3Frame)
+
+summary(SmLm4)
+
+
+plot1 <- tst3Frame %>% 
+ggplot(aes(x=Day, y=AvgClose, group=1)) +
+    geom_line() +
+    geom_point() + labs(x=" Days", y="Closing Price", title = "Avg of Closing Price for Top 5 Large Growth Funds", subtitle = " March 15, 2020 - April 30, 2020")
+
+plot2 <- tst3Frame %>% 
+ggplot(aes(x=Day, y=Sentiment, group=1)) +
+    geom_line() +
+    geom_point() + labs(x="Days", y="WH Briefing Sentiment", title = "Biin Sentiment Scores over 32 Days of WH Briefings", subtitle = "March 15, 2020 - April 30, 2020")
+
+grid.arrange(plot1, plot2, nrow = 2)
+```
 # Challenges
 * Incorpating such different data into one graph for comparison
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
