@@ -167,7 +167,7 @@ dplyr::glimpse(trump_apprdf)
 
 ```{r filter-apr, echo=TRUE, warning=FALSE}
 
-# filter data for April , 2020
+# filter data for April, 2020
 trump_apprsubdf <- trump_apprdf %>% 
   filter(modeldate >= as.Date("2020-04-01"))
 ```
@@ -206,7 +206,7 @@ wh.affin <- tidy_data %>%
 wh.affin
 ```
 
-```{r affin-bar, echo=TRUE, warning=FALSE,include=FALSE}
+```{r affin-bar, echo=TRUE, warning=FALSE,include=TRUE}
 
 # bar plot for positive and negative cumulative score
 wh.affin %>% 
@@ -241,7 +241,7 @@ wh.bing
 
 
   
-```{r bing-bar, echo=TRUE, warning=FALSE,include=FALSE}
+```{r bing-bar, echo=TRUE, warning=FALSE,include=TRUE}
 
 # bar plot for positive and negative sentiments
 wh.bing %>% 
@@ -278,32 +278,8 @@ wh.nrc
 ```
 
 
-```{r plot-all-lex, echo=TRUE, warning=FALSE}
-
-# Comparing all 3 lexicons
-
-wh.aff_bin_nrc <- bind_rows(wh.affin, wh.bing, wh.nrc)
-bind_rows(wh.aff_bin_nrc) %>%
-  ggplot(aes(day, sentiment, fill = method)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~method, ncol = 1, scales = "free_y")
-```
-
-
-
-```{r compare-all-lex, echo=TRUE, warning=FALSE,include=FALSE}
-
-# comparing the cumulative sentiments for all 3 lexicons
-wh.aff_bin_nrc %>% 
-  group_by(method) %>% 
-  summarise(sentiment = sum(sentiment)) %>% 
-  ggplot(aes(method, sentiment, fill = method)) +
-  geom_bar(stat="identity") +  
-  geom_text(aes(label=sentiment), position=position_dodge(width=0.9), vjust=-0.25)
-```
-
 ```{r nrc-bar, echo=TRUE, warning=FALSE}
-# bar graph for all sentiment categories in nrc lexicon
+# bar graph for all categories in nrc lexicon
 tidy_data %>% 
   anti_join(stop_words) %>% 
   group_by(day) %>%
@@ -321,7 +297,35 @@ tidy_data %>%
 
 ```
 
-```{r plot-line-all, echo=TRUE, warning=FALSE,include=FALSE}
+
+
+```{r plot-all-lex, echo=TRUE, warning=FALSE}
+
+# Comparing all 3 lexicons
+
+wh.aff_bin_nrc <- bind_rows(wh.affin, wh.bing, wh.nrc)
+bind_rows(wh.aff_bin_nrc) %>%
+  ggplot(aes(day, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
+
+```{r compare-all-lex, echo=TRUE, warning=FALSE,include=TRUE}
+
+# comparing the cumulative sentiments for all 3 lexicons
+wh.aff_bin_nrc %>% 
+  group_by(method) %>% 
+  summarise(sentiment = sum(sentiment)) %>% 
+  ggplot(aes(method, sentiment, fill = method)) +
+  geom_bar(stat="identity") +  
+  geom_text(aes(label=sentiment), position=position_dodge(width=0.9), vjust=-0.25)
+```
+
+
+
+```{r plot-line-all, echo=TRUE, warning=FALSE,include=TRUE}
 
 # line graph for all 3 lexicons
 wh.aff_bin_nrc %>% 
@@ -383,15 +387,6 @@ ggarrange(approve, disapprove, ncol=1)
 ```
 
 
-# Challenges:  
-* Incorpating such different data into one graph for comparison
-* Twitter data was only available for the past 8 days, so we were unable to chart this data over time
-
-#Resources:  
-  
-* [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
-* [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
-* [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 
 ```{r}
 smFrame <- dateFrame
@@ -430,3 +425,18 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 
 grid.arrange(plot1, plot2, nrow = 2)
 ```
+
+
+# Challenges
+* Incorpating such different data into one graph for comparison
+* Twitter data was only available for the past 8 days, so we were unable to chart this data over time
+
+
+# Resources  
+* [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
+* [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
+* [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+
+
+
+
