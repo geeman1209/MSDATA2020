@@ -72,7 +72,7 @@ wh_dates <- purrr::map(urls, ~read_html(.x) %>% html_nodes("p") %>% html_node("t
 We decided it would be best to compare smallCapFunds, midCapFunds, and largeCapFunds.
 ```{r gather-stock-market-data,warnings=FALSE,messages=FALSE}
 start<- as.Date("2020-03-15")
-end <- as.Date("2020-04-27")
+end <- as.Date("2020-04-30")
 
 
 #Retrieving information on Top 5 Small Growth Funds as ranked by "U.S. News"
@@ -393,3 +393,40 @@ ggarrange(approve, disapprove, ncol=1)
 * [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
 * [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 
+```{r}
+smFrame <- dateFrame
+colnames(smFrame) <- c("Date","Day")
+
+smFrame$PSGAX_Close <- PSGAX$PSGAX.Close
+smFrame$FKASX_Close <- FKASX$FKASX.Close 
+smFrame$PGSGX_Close <- PGSGX$PGSGX.Close
+smFrame$QUASX_Close <- QUASX$QUASX.Close
+smFrame$TRSSX_Close <- TRSSX$TRSSX.Close
+
+
+smFrame$Sentiment <- wh.bing$sentiment
+
+```
+
+```{r}
+tstFrame <- smFrame
+
+tstFrame$AvgClose <- (smFrame$PSGAX_Close + smFrame$FKASX_Close + smFrame$PGSGX_Close + smFrame$TRSSX_Close + smFrame$QUASX_Close)/5
+
+SmLm2 <- lm(AvgClose ~ Sentiment, data= tstFrame)
+
+summary(SmLm2)
+
+
+plot1 <- tstFrame %>% 
+ggplot(aes(x=Day, y=AvgClose, group=1)) +
+    geom_line() +
+    geom_point() + labs(x=" Days", y="Closing Price", title = "Avg of Closing Price for Top 5 Small Cap Funds", subtitle = " March 15, 2020 - April 30, 2020")
+
+plot2 <- tstFrame %>% 
+ggplot(aes(x=Day, y=Sentiment, group=1)) +
+    geom_line() +
+    geom_point() + labs(x="Days", y="WH Briefing Sentiment", title = "Biin Sentiment Scores over 32 Days of WH Briefings", subtitle = "March 15, 2020 - April 30, 2020")
+
+grid.arrange(plot1, plot2, nrow = 2)
+```
