@@ -453,7 +453,7 @@ ggplot(aes(x=Day, y=AvgClose, group=1)) +
 plot2 <- tstFrame %>% 
 ggplot(aes(x=Day, y=Sentiment, group=1)) +
     geom_line() +
-    geom_point() + labs(x="Days", y="WH Briefing Sentiment", title = "Biin Sentiment Scores over 32 Days of WH Briefings", subtitle = "March 15, 2020 - April 30, 2020")
+    geom_point() + labs(x="Days", y="WH Briefing Sentiment", title = "Bing Sentiment Scores over 32 Days of WH Briefings", subtitle = "March 15, 2020 - April 30, 2020")
 
 grid.arrange(plot1, plot2, nrow = 2)
 ```
@@ -535,6 +535,7 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 
 grid.arrange(plot1, plot2, nrow = 2)
 ```
+
 ## Twitter API
 
 In this analysis, we use the twitter account of Donald Trump. All Twitter posts collected from Donald Trump’s twitter account `realDonaldTrump` post for corona pandemic. We will request for 10,000 tweets related to #COVID-19 and #realDonaldTrump from March 15 to May 8th in 2020 for analysis.
@@ -773,11 +774,13 @@ wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq
 
 ### Conclusion
 
-Based on the data, there is little correlation and statistical signifance to the White Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
+Based on the $R^2$ value (3%-4%) between White House sentiments and stocks, there is little correlation and statistical signifance to the White House Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
 
-Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White Briefings might see a better correlation to market performance. Also, the lexicon used for to compare against market performance is bing. We did not compare against others. 
+Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White House  Briefings might see a better correlation to market performance. Also, the lexicon used for to compare against market performance is bing. We did not compare against others. 
 
-+ Overall, the tweets convey an optimistic sentiment with the high frequency of words such as `Positive`,`safe` and `lead` of defeating Coronavirus. And most negative high frequancy words such as `lack`,`scam` and `concern`
+Sentence Sentiment Analysis can be considered here since it focuses on the whole sentence and not just words. It works well with the larger amount of data so can be explored here to get the sentiments that might go well with stocks.
+
++ Overall, the tweets convey an optimistic sentiment with the high frequency of words such as `Positive`,`safe` and `lead` of defeating Coronavirus. And most negative high frequancy words such as `lack`,`scam` and `concern`.
 
 + When looking at bar graph (Sentiment Word Frequency graph), the word “lack” has highest frequency among other words, which suggests that there are news or stories posted on twitter about people died in Covid-19 pandemic and president statement is not correct. 
 
@@ -789,11 +792,13 @@ This sentiment analysis, we see the most negative sentiments over positive. This
 
 
 # Challenges
+
 * Incorpating such different data into one graph for comparison
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
 
 
-# Resources  
+# Resources
+
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
 * [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
 * [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
