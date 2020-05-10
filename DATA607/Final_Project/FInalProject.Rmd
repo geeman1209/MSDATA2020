@@ -393,7 +393,7 @@ ggarrange(a, b, ncol=1,top = "White House Briefings - Daily Sentiment by Categor
 ```
 
 
-### Trump approval ratings analysis
+## Trump approval ratings analysis
 
 Below two graphs show Trump approval and disapproval ratings for the period of April, 2020. The 3 subgroups included in this analysis are Adults, All polls and Voters. Seeing the graphs, approval estimates shows decline while disapproval estimates increases for all 3 categories.
 
@@ -421,7 +421,7 @@ ggarrange(approve, disapprove, ncol=1)
 
 ```
 
-### Stock Market Performance
+## Stock Market Performance
 
 We used the U.S. News Report top 5 small, mid, and large growth funds to reflect performance small business america vs mid sized businesses vs big business. It was difficult to pick something that would compare the health of "mom and pop" shops, which are a sizable number of businesses. 
 
@@ -429,6 +429,7 @@ A data frame was created that included all the closing prices along with the bin
 
 A the corr function and lm function were used to calculate any p and corr values between the average closing price and sentiment variables. 
 
+### Small Growth Funds & White House Sentiment Analysis
 ```{r}
 smFrame <- dateFrame
 colnames(smFrame) <- c("Date","Day")
@@ -467,6 +468,7 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 grid.arrange(plot1, plot2, nrow = 2)
 ```
 
+### Mid Growth Funds & White House Sentiment Analysis
 ```{r}
 mdFrame <- dateFrame
 colnames(mdFrame) <- c("Date","Day")
@@ -506,7 +508,7 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 grid.arrange(plot1, plot2, nrow = 2)
 ```
 
-
+### Large Growth Funds & White House Sentiment Analysis
 ```{r}
 lgFrame <- dateFrame
 colnames(lgFrame) <- c("Date","Day")
@@ -781,7 +783,7 @@ pal <- RColorBrewer::brewer.pal(9,"Set2")
 wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq, min.freq=50,max.words = 50, random.order=TRUE,random.color = TRUE, rot.per=.15, colors = pal,scale = c(3,1))
 ```
 
-### Conclusion
+# Conclusion
 
 Based on the $R^2$ value (3%-4%) between White House sentiments and stocks, there is little correlation and statistical signifance to the White House Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
 
@@ -798,16 +800,15 @@ Sentence Sentiment Analysis can be considered here since it focuses on the whole
 This sentiment analysis, we see the most negative sentiments over positive. This pandemic number of infections of people increasing daily but no vaccine released yet. Government trying hard to help people, due to infection health care professionals also getting infected. 
 
 
+## Challenges & Additional Comments
 
-
-# Challenges
-
-* Incorpating such different data into one graph for comparison
+* Incorpating such different data into one graph for comparison 
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
+* Our feature not discussed in our class was using linear regression to analyze different stock prices and sentiment analysis
 
 
-# Resources
-
+## Resources  
+  
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
 * [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 * Twitter API using R: https://www.youtube.com/watch?v=M_PnapGrpNI
