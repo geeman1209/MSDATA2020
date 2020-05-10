@@ -97,7 +97,9 @@ dplyr::glimpse(PSGAX)
 ```
 
 ## [Trump Approval Ratings](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+
 These ratings were available on FiveThiryEight broken out by Votes,Adults, and All Polls for each day during April 2020.
+
 ```{r gather-trump-appr, echo=TRUE, warning=FALSE}
 
 #github URL
@@ -113,7 +115,9 @@ dplyr::glimpse(trump_apprdf)
 # Cleaning Data 
 
 ## Clean WH Briefing Data
+
 In order to easily analyze the WH briefings, we needed to include a date in the format 'yyyy-mm-dd' in addition to our number page number, i.  The page number correlates with the last character of the page URL.
+
 ```{r clean-wh-briefing-dates}
 
 #create empty dataframe
@@ -159,6 +163,9 @@ head(tidy_data)
 ```
 
 ## Clean Approval Ratings
+
+To analyze the approval ratings, we needed to convert the modeldate into the date format 'yyyy-mm-dd' alongwith filterring the data for the month of April, 2020.
+
 ```{r date, echo=TRUE, warning=FALSE}
 
 # modeldate - convert into date
@@ -175,6 +182,7 @@ trump_apprsubdf <- trump_apprdf %>%
 
 # Data Analysis
 ## White House Briefing & Sentiment Analysis
+
 ```{r create-stop-word-list,include=FALSE}
 custom_stop_words <- bind_rows(tibble(word = c("EDT"), 
                                       lexicon = c("custom")), 
@@ -182,6 +190,13 @@ custom_stop_words <- bind_rows(tibble(word = c("EDT"),
 
 custom_stop_words
 ```
+
+
+The tidytext package contains three sentiment lexicons. Three general-purpose lexicons are affin, bing and nrc which are based on unigrams, i.e., single words.
+
+* AFINN from Finn Arup Nielsen assigns scores to words for positive/negative sentiments.
+* bing from Bing Liu and collaborators categorizes words in a binary fashion into positive and negative categories.
+* nrc from Saif Mohammad and Peter Turney categorizes words in a binary fashion (“yes”/“no”) into categories of positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust.
 
 ```{r apply lexicon analysis,include=FALSE,include=FALSE}
 afinn <- get_sentiments("afinn") 
@@ -299,6 +314,9 @@ tidy_data %>%
 ```
 
 
+### Comparing Lexicons
+
+Following graphs show Sentiment score assigned by each lexicon to individual words in all documents in the corpus.
 
 ```{r plot-all-lex, echo=TRUE, warning=FALSE}
 
@@ -337,6 +355,9 @@ wh.aff_bin_nrc %>%
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+
+The following two graphs are for nrc sentiment where former shows positive, trust and later shows rest of the sentiments.
+
 ```{r daily-nrc-sentiment-plot-1, echo=TRUE, warning=FALSE,messages=FALSE}
 a <- tidy_data %>% 
   anti_join(stop_words) %>% 
@@ -362,6 +383,10 @@ ggarrange(a, b, ncol=1,top = "White House Briefings - Daily Sentiment by Categor
 
 ```
 
+
+### Trump approval ratings analysis
+
+Below two graphs show Trump approval and disapproval ratings for the period of April, 2020. The 3 subgroups included in this analysis are Adults, All polls and Voters. Seeing the graphs, approval estimates shows decline while disapproval estimates increases for all 3 categories.
 
 
 ```{r approval-and-disapproval-line, echo=TRUE, warning=FALSE}
