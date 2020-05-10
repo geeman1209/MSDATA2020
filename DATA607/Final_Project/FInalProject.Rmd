@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Trump’s presidency is unique from other presidents in the manner he communicates public and economic policy via social media. We want to examine whether his remarks during this global pandemic (Mid March through April 2020) have tangible effects on the stock market.  We’re going to analyze the text from daily White House briefings using sentiment analysis. Compare and contrast the sentiment analysis with the stock market performance during his presidency and Trump's approval ratings.
 
 ## Data Sources:   
-* White House Briefings - each weekday President Trump addresses the nation and those scripts can be found on []()
+* White House Briefings - each weekday President Trump addresses the nation and those scripts can be found on [https://www.whitehouse.gov/briefings-statements](https://www.whitehouse.gov/briefings-statements)
 * Stock Market Data - this data was extracted using the **quantmod** to obtain small, mid and large Cap funds
 * Trump Approval Ratings - this shows daily approval ratings from [FiveThirtyEight](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 * Twitter API (https://dev.twitter.com/apps)
@@ -313,7 +313,13 @@ tidy_data %>%
 
 ```
 
+```{r day}
+tidy_data %>% select(date,day) %>% filter(day == 16)
 
+trump_apprsubdf %>% filter(modeldate == '2020-04-02')
+trump_apprsubdf %>% filter(modeldate == '2020-04-03')
+trump_apprsubdf %>% filter(modeldate == '2020-04-04')
+```
 ### Comparing Lexicons
 
 Following graphs show Sentiment score assigned by each lexicon to individual words in all documents in the corpus.
@@ -357,6 +363,9 @@ wh.aff_bin_nrc %>%
 
 
 The following two graphs are for nrc sentiment where former shows positive, trust and later shows rest of the sentiments.
+
+* There are peaks in words of trust and positive on April 3rd, April 7th and April 14th
+* There are peaks in words of fear on April 1st and April 10th
 
 ```{r daily-nrc-sentiment-plot-1, echo=TRUE, warning=FALSE,messages=FALSE}
 a <- tidy_data %>% 
@@ -800,7 +809,6 @@ This sentiment analysis, we see the most negative sentiments over positive. This
 # Resources
 
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
-* [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
 * [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
 * Twitter API using R: https://www.youtube.com/watch?v=M_PnapGrpNI
 * Twitter react to the Coronavirus pandemic: https://towardsdatascience.com/how-did-twitter-react-to-the-coronavirus-pandemic-2857592b449a
