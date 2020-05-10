@@ -412,7 +412,13 @@ ggarrange(approve, disapprove, ncol=1)
 
 ```
 
+### Stock Market Performance
 
+We used the U.S. News Report top 5 small, mid, and large growth funds to reflect performance small business america vs mid sized businesses vs big business. It was difficult to pick something that would compare the health of "mom and pop" shops, which are a sizable number of businesses. 
+
+A data frame was created that included all the closing prices along with the bing sentiment. The average closing price was calculated and compared against the sentiment over the designated time frame.
+
+A the corr function and lm function were used to calculate any p and corr values between the average closing price and sentiment variables. 
 
 ```{r}
 smFrame <- dateFrame
@@ -770,7 +776,6 @@ wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq
 Based on the data, there is little correlation and statistical signifance to the White Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
 
 Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White Briefings might see a better correlation to market performance. Also, the lexicon used for to compare against market performance is bing. We did not compare against others. 
-
 
 + Overall, the tweets convey an optimistic sentiment with the high frequency of words such as `Positive`,`safe` and `lead` of defeating Coronavirus. And most negative high frequancy words such as `lack`,`scam` and `concern`
 
