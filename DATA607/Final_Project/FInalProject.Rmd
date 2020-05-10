@@ -1,5 +1,5 @@
 ---
-title: "Final Project"
+title: "Data 607 - Final Project"
 author: "Devin Teran, Gabe Abreu, Amit Kapoor, Subhalaxmi Rout"
 date: "4/27/2020"
 output: rmdformats::readthedown
@@ -314,7 +314,6 @@ tidy_data %>%
 ```
 
 ```{r day}
-tidy_data %>% select(date,day) %>% filter(day == 16)
 
 trump_apprsubdf %>% filter(modeldate == '2020-04-02')
 trump_apprsubdf %>% filter(modeldate == '2020-04-03')
