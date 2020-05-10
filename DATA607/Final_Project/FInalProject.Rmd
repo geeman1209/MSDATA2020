@@ -411,7 +411,7 @@ tstFrame$AvgClose <- (smFrame$PSGAX_Close + smFrame$FKASX_Close + smFrame$PGSGX_
 SmLm2 <- lm(AvgClose ~ Sentiment, data= tstFrame)
 
 summary(SmLm2)
-
+cor(tstFrame[8:9])
 
 plot1 <- tstFrame %>% 
 ggplot(aes(x=Day, y=AvgClose, group=1)) +
@@ -449,6 +449,7 @@ tst2Frame$AvgClose <- (mdFrame$DFDMX_Close + mdFrame$CCSMX_Close + mdFrame$PRDMX
 SmLm3 <- lm(AvgClose ~ Sentiment, data= tst2Frame)
 
 summary(SmLm3)
+cor(tst2Frame[8:9])
 
 
 plot1 <- tst2Frame %>% 
@@ -488,7 +489,7 @@ tst3Frame$AvgClose <- (TRLGX$TRLGX.Close + PREFX$PREFX.Close + TPLGX$TPLGX.Close
 SmLm4 <- lm(AvgClose ~ Sentiment, data= tst3Frame)
 
 summary(SmLm4)
-
+cor(tst3Frame[8:9])
 
 plot1 <- tst3Frame %>% 
 ggplot(aes(x=Day, y=AvgClose, group=1)) +
@@ -506,6 +507,11 @@ grid.arrange(plot1, plot2, nrow = 2)
 * Incorpating such different data into one graph for comparison
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
 
+# Conclusion
+
+Based on the data, there is little correlation and statistical signifance to the White Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
+
+Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White Briefings might see a better correlation to market performance. 
 
 # Resources  
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
