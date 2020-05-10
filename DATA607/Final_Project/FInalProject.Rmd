@@ -767,6 +767,11 @@ wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq
 
 ### Conclusion
 
+Based on the data, there is little correlation and statistical signifance to the White Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
+
+Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White Briefings might see a better correlation to market performance. Also, the lexicon used for to compare against market performance is bing. We did not compare against others. 
+
+
 + Overall, the tweets convey an optimistic sentiment with the high frequency of words such as `Positive`,`safe` and `lead` of defeating Coronavirus. And most negative high frequancy words such as `lack`,`scam` and `concern`
 
 + When looking at bar graph (Sentiment Word Frequency graph), the word “lack” has highest frequency among other words, which suggests that there are news or stories posted on twitter about people died in Covid-19 pandemic and president statement is not correct. 
@@ -782,11 +787,6 @@ This sentiment analysis, we see the most negative sentiments over positive. This
 * Incorpating such different data into one graph for comparison
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
 
-# Conclusion
-
-Based on the data, there is little correlation and statistical signifance to the White Briefings affecting the average closing price of small, mid, or large businesses in America. Ideally, we wanted to perform a sentiment analysis of Trump's tweets to visualize the impact of his words (unfiltered through tweets) on the economy, especially during the current crises. Unfortunately, twitter's API only allows for the download of a week's worth of data from the present date. 
-
-Something to consider, there many variables that affect stock or economic performance, which we did not take into consideration. In the future, perhaps a sentiment analysis of news articles from the financial times or wall street journal, as well as the social media accounts of prominent financial talking heads comparing it with White Briefings might see a better correlation to market performance. 
 
 # Resources  
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
