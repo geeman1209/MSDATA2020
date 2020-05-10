@@ -15,6 +15,7 @@ Trump’s presidency is unique from other presidents in the manner he communicat
 * White House Briefings - each weekday President Trump addresses the nation and those scripts can be found on []()
 * Stock Market Data - this data was extracted using the **quantmod** to obtain small, mid and large Cap funds
 * Trump Approval Ratings - this shows daily approval ratings from [FiveThirtyEight](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+* Twitter API (https://dev.twitter.com/apps)
 
 ## Necessary R Packages:
 The following libraries are used throughout our analysis:
@@ -96,7 +97,9 @@ dplyr::glimpse(PSGAX)
 ```
 
 ## [Trump Approval Ratings](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+
 These ratings were available on FiveThiryEight broken out by Votes,Adults, and All Polls for each day during April 2020.
+
 ```{r gather-trump-appr, echo=TRUE, warning=FALSE}
 
 #github URL
@@ -112,7 +115,9 @@ dplyr::glimpse(trump_apprdf)
 # Cleaning Data 
 
 ## Clean WH Briefing Data
+
 In order to easily analyze the WH briefings, we needed to include a date in the format 'yyyy-mm-dd' in addition to our number page number, i.  The page number correlates with the last character of the page URL.
+
 ```{r clean-wh-briefing-dates}
 
 #create empty dataframe
@@ -158,6 +163,9 @@ head(tidy_data)
 ```
 
 ## Clean Approval Ratings
+
+To analyze the approval ratings, we needed to convert the modeldate into the date format 'yyyy-mm-dd' alongwith filterring the data for the month of April, 2020.
+
 ```{r date, echo=TRUE, warning=FALSE}
 
 # modeldate - convert into date
@@ -174,6 +182,7 @@ trump_apprsubdf <- trump_apprdf %>%
 
 # Data Analysis
 ## White House Briefing & Sentiment Analysis
+
 ```{r create-stop-word-list,include=FALSE}
 custom_stop_words <- bind_rows(tibble(word = c("EDT"), 
                                       lexicon = c("custom")), 
@@ -181,6 +190,13 @@ custom_stop_words <- bind_rows(tibble(word = c("EDT"),
 
 custom_stop_words
 ```
+
+
+The tidytext package contains three sentiment lexicons. Three general-purpose lexicons are affin, bing and nrc which are based on unigrams, i.e., single words.
+
+* AFINN from Finn Arup Nielsen assigns scores to words for positive/negative sentiments.
+* bing from Bing Liu and collaborators categorizes words in a binary fashion into positive and negative categories.
+* nrc from Saif Mohammad and Peter Turney categorizes words in a binary fashion (“yes”/“no”) into categories of positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust.
 
 ```{r apply lexicon analysis,include=FALSE,include=FALSE}
 afinn <- get_sentiments("afinn") 
@@ -298,6 +314,9 @@ tidy_data %>%
 ```
 
 
+### Comparing Lexicons
+
+Following graphs show Sentiment score assigned by each lexicon to individual words in all documents in the corpus.
 
 ```{r plot-all-lex, echo=TRUE, warning=FALSE}
 
@@ -336,6 +355,9 @@ wh.aff_bin_nrc %>%
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+
+The following two graphs are for nrc sentiment where former shows positive, trust and later shows rest of the sentiments.
+
 ```{r daily-nrc-sentiment-plot-1, echo=TRUE, warning=FALSE,messages=FALSE}
 a <- tidy_data %>% 
   anti_join(stop_words) %>% 
@@ -361,6 +383,10 @@ ggarrange(a, b, ncol=1,top = "White House Briefings - Daily Sentiment by Categor
 
 ```
 
+
+### Trump approval ratings analysis
+
+Below two graphs show Trump approval and disapproval ratings for the period of April, 2020. The 3 subgroups included in this analysis are Adults, All polls and Voters. Seeing the graphs, approval estimates shows decline while disapproval estimates increases for all 3 categories.
 
 
 ```{r approval-and-disapproval-line, echo=TRUE, warning=FALSE}
@@ -503,6 +529,255 @@ ggplot(aes(x=Day, y=Sentiment, group=1)) +
 
 grid.arrange(plot1, plot2, nrow = 2)
 ```
+## Twitter API
+
+In this analysis, we use the twitter account of Donald Trump. All Twitter posts collected from Donald Trump’s twitter account `realDonaldTrump` post for corona pandemic. We will request for 10,000 tweets related to #COVID-19 and #realDonaldTrump from March 15 to May 8th in 2020 for analysis.
+
+We use the data science software R with the tidyr,tidytext, dplyr packages to do text analytics and the twitteR package to connect and download data from twitter.
+
+To collect data from twitter, we created one twitter application. This twitter data belongs to `realDonaldTrump` page. 
+Followed the below steps to connect the app and download data from twitter. After getting the data, store the file in a csv file in Git repository and perform the sentiment analysis. 
+
++ Create a twitter account
++ Go to https://dev.twitter.com/apps and log in with twitter credentials
++ Click create a new app 
++ Give name, Description, Website, and Callback URL (I have used http://localhost:1410 for Callback URL)
++ Click on Developer Agreement check box
++ After create app, go to "keys and Access token" 
++ Copy the below keys 
+  * Consumer key (API Key)
+  * Consumer secret (API Secret)
++ Then, click the `create my access token` then copy the below keys
+  * access token
+  * access token secret
+
+Load necessary packages and collect the data from twitter.
+
+```{r message=FALSE, warning=FALSE}
+library(twitteR)
+library(tidyr)
+
+consumer_key <- "Lsk1wfKakbL6rfFC1dcLfpSrb"
+consumer_secret <- "rKywBX5uJ3d13drP8NxgWGxC3TtPraKZiucS58J2OzFW0Rpcci"
+access_token <- "1257449305616650243-J8E4TpO0Fmu6v5KXyY8T9owgSsPI7v"
+access_secret <- "tgCzUd7fXgnSZFrLvmeMBYNJzH3i1hZkDX16PK3APkM3E"
+
+#now lets connect
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+# Collect 10000 tweets
+trump_tweets <- twitteR::searchTwitter("#COVID-19 + @realDonaldTrump", n = 10000,lang = "en", since = "2020-03-15", until = "2020-05-08",retryOnRateLimit = 1e2)
+
+# set to a data frame
+trump_tweets_df = twListToDF(trump_tweets)
+
+# write data in to a csv
+write.csv(trump_tweets_df, file = "trump_tweets.csv")
+
+# read data from Github
+trump_tweets_df <- read.csv("https://raw.githubusercontent.com/geeman1209/MSDATA2020/master/DATA607/Final_Project/trump_tweets.csv", stringsAsFactors = FALSE)
+
+
+# Raw data
+head(trump_tweets_df)
+
+
+# Remove http from statusSource
+trump_tweets_df$statusSource <- gsub("<.*?>", "",trump_tweets_df$statusSource)
+
+# Most favorited tweets
+trump_fav <- trump_tweets_df %>%
+  dplyr::arrange(desc(favoriteCount))
+
+# Top 6 favorited tweets among the extracted 10000 tweets
+head(trump_fav)
+
+# Most retweeted
+trump_retweet <- trump_tweets_df %>%
+  dplyr::arrange(desc(retweetCount)) %>%
+  dplyr::distinct(text, .keep_all = TRUE)
+
+# Top 6 retweeted texts among the extracted 10000 tweets
+head(trump_retweet)
+
+trump_retweet_extracted <- trump_retweet[c(1,12,13,14)]
+
+head(trump_retweet_extracted)
+
+```
+
+Data cleaning and tokenization
+
+We will convert the data set into a corpus and then clean the corpus such as making all character lower case, remove punctuation marks, white spaces, and stop words. 
+
+```{r fig.height=5, fig.width=6, message=FALSE, warning=FALSE}
+library(tm)
+library(textmineR)
+library(RWeka)
+library(wordcloud)
+library(RColorBrewer)
+
+trump_tweets_df_2 <- trump_tweets_df[c(1,2)]
+
+# remove imocation from text
+trump_tweets_df_2$text <- gsub("[^\x01-\x7F]", "", trump_tweets_df_2$text)
+
+
+# Change dataset into a corpus
+trump_tweets_corp <- tm::VCorpus(tm::VectorSource(trump_tweets_df_2))
+
+
+# Data cleaning
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, tolower)
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, PlainTextDocument)
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, removePunctuation)
+
+# Remove stop words
+new_stops <-c("covid","iphone","coronavirus","android","web","rt","chuonlinenews","Fashion", "fashionblogger", "Covid_19", "Juventus", "WuhanVirus","covid19","dranthonyfauci","scotgov youre", "rvawonk two","false","president","realdonaldtrump","champion")
+
+
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, removeWords, words = c(stopwords("english"), new_stops))
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, stripWhitespace)
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, PlainTextDocument)
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, removePunctuation)
+trump_tweets_corp <- tm::tm_map(trump_tweets_corp, removeNumbers)
+
+
+# Tokenize tweets texts into words
+tokenizer <- function(x) {
+  RWeka::NGramTokenizer(x, RWeka::Weka_control(min = 2, max = 2))
+}
+
+tdm <- TermDocumentMatrix(
+  trump_tweets_corp,
+  control = list(tokenize = tokenizer)
+)
+
+tdm <- as.matrix(tdm)
+trump_tweets_cleaned_freq <- rowSums(tdm)
+
+
+# Create a bi-gram (2-word) word cloud
+pal <- RColorBrewer::brewer.pal(8,"Set1")
+wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq, min.freq=50,max.words = 50, random.order=TRUE,random.color = TRUE, rot.per=.15, colors = pal,scale = c(3,1))
+```
+
+This word cloud shows the Word frequency of bi-grams(2 words). Based on the bi-gram we can know what most people are taking on Trump's post. 
+
+### Sentiment Analysis 
+
+Sentiment analysis helps us understand peoples’ feelings towards a specific subject. We will break the tweets’ sentences into words for further analysis.
+
+```{r message=FALSE, warning=FALSE}
+library(tibble)
+library(tidytext)
+
+# Transform sentences into words
+trump_data <- trump_tweets_df %>%
+  tidytext::unnest_tokens(output = "words", input = text, token = "words")
+
+# Remove stop words from tibble
+trump_clean_data <- trump_data %>%
+  dplyr::anti_join(stop_words, by=c("words"="word")) %>% dplyr::filter(words != "trump" )
+```
+Polarity scores help us make quantitative judgments about the feelings of some text. In short, we categorize words from the tweets into positive and negative types and give them a score for analysis.
+Then, we filter the dataset to get only words with a polarity score of 80 or more. I assigned the words with sentiment using `bing` lexicon and categorize words using polarity scores.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyr)
+library(ggplot2)
+
+sentiment_data <- trump_clean_data %>% 
+  # Inner join to bing lexicon by term = word
+  dplyr::inner_join(get_sentiments("bing"), by = c("words" = "word")) %>% 
+  # Count by term and sentiment, weighted by count
+  dplyr::count(words, sentiment) %>%
+  # Spread sentiment, using n as values
+  tidyr::spread(sentiment, n, fill = 0) %>%
+  # Mutate to add a polarity column
+  dplyr::mutate(polarity = positive - negative)
+
+# show summary of sentiment data
+summary(sentiment_data)
+
+polarity_data <- sentiment_data %>% 
+  # Filter for absolute polarity at least 80 
+  dplyr::filter(abs(polarity) >= 80) %>% 
+  # add new column named as sentiments, shows positive/negative
+  dplyr::mutate(
+    Sentiments = ifelse(polarity > 0, "positive", "negative")
+  )
+
+
+ggplot2::ggplot(polarity_data, aes(reorder(words, polarity), polarity, fill = Sentiments)) +
+  geom_col() + 
+  ggtitle("Sentiment Word Frequency") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, size = 10))+
+  xlab("Word")
+```
+From the frequency of sentiments, we can see, negative sentiments frequency and positive sentiments are equal.
+
+To get a clear picture of how positive and negative words are used, I assigned the words with a sentiment using the ‘bing’ lexicon and do a simple count to generate the top 15 most common positive and negative words used in the extracted tweets.
+
+```{r message=FALSE, warning=FALSE}
+word_counts <- trump_clean_data %>%
+  #  sentiment analysis using the "bing" lexicon
+  dplyr::inner_join(get_sentiments("bing"), by = c("words" = "word")) %>%
+  # Count by word and sentiment
+  dplyr::count(words, sentiment)
+
+
+top_words <- word_counts %>%
+  # Group by sentiment
+ dplyr:: group_by(sentiment) %>%
+  # Take the top 15 for each sentiment
+  dplyr::top_n(15) %>%
+  dplyr::ungroup() %>%
+  # Make word a factor in order of n
+  dplyr::mutate(words = reorder(words, n))
+
+
+
+ggplot2::ggplot(top_words, aes(words, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = n, hjust=1), size = 3.5, color = "black") +
+  facet_wrap(~sentiment, scales = "free") +  
+  coord_flip() +
+  ggtitle("Most common positive and negative words")
+
+
+# Sentiment word cloud
+tokenizer <- function(x) {
+  RWeka::NGramTokenizer(x, RWeka::Weka_control(min = 1, max = 1))
+}
+
+tdm <- TermDocumentMatrix(
+  trump_tweets_corp,
+  control = list(tokenize = tokenizer)
+)
+
+tdm <- as.matrix(tdm)
+trump_tweets_cleaned_freq <- rowSums(tdm)
+
+
+# Create a uni-gram (1-word) word cloud
+pal <- RColorBrewer::brewer.pal(9,"Set2")
+wordcloud::wordcloud(names(trump_tweets_cleaned_freq), trump_tweets_cleaned_freq, min.freq=50,max.words = 50, random.order=TRUE,random.color = TRUE, rot.per=.15, colors = pal,scale = c(3,1))
+```
+
+### Conclusion
+
++ Overall, the tweets convey an optimistic sentiment with the high frequency of words such as `Positive`,`safe` and `lead` of defeating Coronavirus. And most negative high frequancy words such as `lack`,`scam` and `concern`
+
++ When looking at bar graph (Sentiment Word Frequency graph), the word “lack” has highest frequency among other words, which suggests that there are news or stories posted on twitter about people died in Covid-19 pandemic and president statement is not correct. 
+
++ The most frequent words in bi-gram word cloud plot show related to tested positive, approved trails, lung disinfectant, concern huge, and huge scam suggesting that the Government tried to release vaccine for the virus but the number of infection cases increase and people are more panic about their health. 
+
+This sentiment analysis, we see the most negative sentiments over positive. This pandemic number of infections of people increasing daily but no vaccine released yet. Government trying hard to help people, due to infection health care professionals also getting infected. 
+
+
+
+
 # Challenges
 * Incorpating such different data into one graph for comparison
 * Twitter data was only available for the past 8 days, so we were unable to chart this data over time
@@ -517,6 +792,8 @@ Something to consider, there many variables that affect stock or economic perfor
 * [https://bradleyboehmke.github.io/2015/12/scraping-html-text.html](https://bradleyboehmke.github.io/2015/12/scraping-html-text.html)  
 * [Automated Data Collection PDF Book](Automated Data Collection PDF Book)
 * [https://projects.fivethirtyeight.com/trump-approval-ratings/](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+* Twitter API using R: https://www.youtube.com/watch?v=M_PnapGrpNI
+* Twitter react to the Coronavirus pandemic: https://towardsdatascience.com/how-did-twitter-react-to-the-coronavirus-pandemic-2857592b449a
 
 
 
