@@ -15,6 +15,7 @@ Trump’s presidency is unique from other presidents in the manner he communicat
 * White House Briefings - each weekday President Trump addresses the nation and those scripts can be found on []()
 * Stock Market Data - this data was extracted using the **quantmod** to obtain small, mid and large Cap funds
 * Trump Approval Ratings - this shows daily approval ratings from [FiveThirtyEight](https://projects.fivethirtyeight.com/trump-approval-ratings/)
+* Twitter API (https://dev.twitter.com/apps)
 
 ## Necessary R Packages:
 The following libraries are used throughout our analysis:
