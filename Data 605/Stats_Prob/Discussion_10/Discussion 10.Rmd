@@ -1,0 +1,46 @@
+---
+title: "Data605_Discussion10"
+author: "Gabe Abreu"
+date: "10/29/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(expm)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 11.1 Ex. 13
+
+13 Write a program to compute u(n) given u and P. Use this program to compute u(10) for the Land of Oz example, 
+with u = (0, 1, 0), and with u = (1/3, 1/3, 1/3).
+
+```{r}
+P <- matrix(c(.50, .25, .25, .50, 0, .50, .25, .25, .50), ncol=3,nrow=3, byrow = TRUE) 
+P
+u1 <- matrix(c(0,1,0), ncol=3,nrow=1, byrow = TRUE) 
+u1
+u2 <- matrix(c(1/3,1/3,1/3), ncol=3,nrow=1, byrow = TRUE)
+u2
+```
+
+```{r}
+
+solve_un <- function(n, u, P){
+    
+  p_n <- P %^% n #solve for  p^n
+  u_n <- u %*% p_n  #solve for uP^n
+
+  return(u_n)
+    
+    
+}
+
+```
+
+```{r}
+solve_un(10, u1, P)
+
+
+solve_un(10,u2, P)
+```

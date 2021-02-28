@@ -1,0 +1,53 @@
+---
+title: "Data605_HW10"
+author: "Gabe Abreu"
+date: "11/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 Assignment #10
+
+Smith is in jail and has 1 dollar; he can get out on bail if he has 8 dollars.
+A guard agrees to make a series of bets with him. If Smith bets A dollars,
+he wins A dollars with probability .4 and loses A dollars with probability .6.
+Find the probability that he wins 8 dollars before losing all of his money if
+
+(a) he bets 1 dollar each time (timid strategy).
+
+```{r}
+#This problem uses the Gambler's Ruin formula (from the textbook Ch12.2 p.489)
+
+#Smith has p of winning of .4
+p <- 0.4
+
+#.6 chance of losing
+q <- 0.6
+
+q_p <- (q/p)
+
+#figure out markov's chain sequencing 1-7
+
+for( i in seq(1, 7, 1)){
+    print ((1 - q_p^i)/(1-q_p^8))
+} 
+
+
+```
+
+The probability that Smith reaches 8 starting 1 is equal to 0.0203, the probably increases as/if he wins.
+
+(b) he bets, each time, as much as possible but not more than necessary to bring his fortune up to 8 dollars (bold strategy).
+
+Smith's aggressive strategy would mean he would need to double his earnings every round, 1->2->4->8, meaning he would need to win 3 times given a probability of .4. 
+```{r}
+aggressive <- .4^3
+print(aggressive)
+```
+(c) Which strategy gives Smith the better chance of getting out of jail?
+
+Smith is better off attempting the bold strategy over the timid strategy. 
+

@@ -1,0 +1,57 @@
+---
+title: "Discussion 6"
+author: "Gabe Abreu"
+date: "10/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Discussion 6
+
+P.114 Problem #5
+
+Use the program BinomialProbabilities to find the probability that, in 100
+tosses of a fair coin, the number of heads that turns up lies between 35 and
+65, between 40 and 60, and between 45 and 55.
+
+
+
+```{r}
+#n -> number of repeated trials
+#p -> probability of success
+#k -> number of success trials
+
+#Create binomial probabilities function
+Binomial_Prob_fun <- function(n,p,k) {
+    result <- (factorial(n)/(factorial(k) * factorial(n-k)))*(p^k)*((1-p)^(n-k))
+    print(result)
+    }
+
+#Create sequences 
+
+#Between 35 adn 65 heads
+a <- seq(35, 65, by = 1)
+
+#Between 40 and 60 heads
+b <- seq(40, 60, by = 1)
+
+#Between 45 and 55 heads
+c <- seq(45, 55, by = 1)
+
+
+#Insert sequences into function for k
+a1 <- Binomial_Prob_fun(100,0.5,a)
+b1 <- Binomial_Prob_fun(100,0.5,b)
+c1 <- Binomial_Prob_fun(100, 0.5, c)
+
+#Add the probabilities within those ranges
+sum(a1)
+
+sum(b1)
+
+sum(c1)
+
+```

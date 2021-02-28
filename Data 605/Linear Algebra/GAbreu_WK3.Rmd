@@ -1,0 +1,129 @@
+---
+title: "GAbreu_Assignment3"
+author: "Gabe Abreu"
+date: "9/13/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Matrix)
+library(pracma)
+```
+
+## Data 605 - Assignment 3
+
+### Problem Set 1
+
+1. What is the rank of the matrix A?
+
+```{r}
+#Building matrix A
+A <- matrix(cbind(1,2,3,4,-1,0,1,3,0,1,-2,1,5,4,-2,-3), byrow = T, ncol = 4)
+A
+
+
+#Going to use the function created in HW 2 to see how many pivot entries are in the matrix
+
+LU_Decomp <- function(mat){
+
+#Get the rows of the matrix 
+mat_rows <- nrow(mat)
+U <- mat
+L <- diag(mat_rows)
+
+#a is rows, b is columns
+# Create loop to go through every row, column by column
+for(a in 1:(nrow(mat) - 1)){
+    for(b in ((a + 1):nrow(mat))){
+    #Solve for L first, if not, the other values won't populate...
+    L[a,b] <- (U[b,a]/U[a,a])
+    U[b,] <- U[b,]-(U[a,] * (U[b,a]/U[a,a]))
+    }
+ }    
+return(list("L" = L, "U" = U))
+}
+
+
+LU_Decomp(A)
+```
+
+There are 4 pivot entries, therefore the rank should be 4. Let's check with the default rankMatrix function from the Matrix library.
+
+```{r}
+rankMatrix(A)[1]
+
+```
+
+The rank function also confirms the rank is 4.
+
+2. Given an mxn matrix where m > n, what can be the maximum rank? The minimum rank, assuming that the matrix is non-zero?
+
+Answer: If m>n and the n column is independent, then the rank of an mxn matrix is n. 
+
+If the matrix is non-zero, then the minimum rank is 1. 
+
+
+3. What is the rank of matrix B?
+
+```{r}
+B <- matrix(c(1,2,1,3,6,3,2,4,2), byrow = T, nrow = 3)
+B
+
+rankMatrix(B)[1]
+```
+The rank of the matrix is 1.
+
+
+## Problem Set 2
+Compute the eigenvalues and eigenvectors of the matrix A. You’ll need to show your
+work. You’ll need to write out the characteristic polynomial and show your solution.
+
+Please show your work using an R-markdown document. Please name your assignment
+submission with your first initial and last name.
+
+Here is the problem done by hand:
+```{r label}
+knitr::include_graphics(path = "HW_PS2_1.pdf")
+
+knitr::include_graphics(path = "HW3_PS2_PT2.pdf")
+```
+
+```{r}
+A_2 <- matrix(c(1,2,3,0,4,5,0,0,6), byrow = T, nrow = 3)
+
+#function to compute polynomial 
+charpoly(A_2)
+
+e_values <- eigen(A_2)
+
+e_values$values
+
+e_values$vectors
+```
+
+```{r}
+#Eigen vector calculation
+
+lambda_6_dist = sqrt((5/2)^2 + (8/5)^2 + 1)
+lambda_6_dist
+
+lambda_4_dist = sqrt((2/3)^2 + 1)
+lambda_4_dist
+
+lambda6_v1 = (8/5)/lambda_6_dist
+lambda6_v2 = (5/2)/lambda_6_dist
+lambda6_v3 = 1/lambda_6_dist
+
+lambda6_evectors = matrix(c(lambda6_v1, lambda6_v2, lambda6_v3))
+lambda6_evectors
+
+lambda4_v1 = (2/3)/lambda_4_dist
+lambda4_v2 = 1/lambda_4_dist
+
+
+lambda4_evectors = matrix(c(lambda4_v1,lambda4_v2))
+lambda4_evectors
+```

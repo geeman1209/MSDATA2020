@@ -1,0 +1,59 @@
+---
+title: "GAbreu_Assignment2_PS2"
+author: "Gabe Abreu"
+date: "9/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 602 Assignment 2 Part 2
+
+### 2. Problem set 2
+
+Matrix factorization is a very important problem. There are supercomputers built just
+to do matrix factorizations. Every second you are on an airplane, matrices are being
+factorized. Radars that track flights use a technique called Kalman filtering. At the heart
+of Kalman Filtering is a Matrix Factorization operation. Kalman Filters are solving linear
+systems of equations when they track your flight using radars.
+Write an R function to factorize a square matrix A into LU or LDU, whichever you
+prefer.
+
+
+```{r}
+#Two test matrices
+#The first matrix is taken from the week 2 lecture handout
+A <- matrix(c(1,2,3,1,1,1,2,0,1), nrow=3)
+B<- matrix(c(1,1,2,3), nrow = 2)
+C <- matrix(c(1,2,3,4,-1,0,1,3,0,1,-2,1,5,4,-2,-3), nrow = 4)
+
+
+LU_Decomp <- function(mat){
+
+#Get the rows of the matrix 
+mat_rows <- nrow(mat)
+U <- mat
+L <- diag(mat_rows)
+
+#a is rows, b is columns
+# Create loop to go through every row, column by column
+for(a in 1:(nrow(mat) - 1)){
+    for(b in ((a + 1):nrow(mat))){
+    #Solve for L first, if not, the other values won't populate...
+    L[a,b] <- (U[b,a]/U[a,a])
+    U[b,] <- U[b,]-(U[a,] * (U[b,a]/U[a,a]))
+    }
+ }    
+return(list("L" = L, "U" = U))
+}
+
+
+LU_Decomp(B)
+LU_Decomp(A)
+LU_Decomp(C)
+
+```
+
+

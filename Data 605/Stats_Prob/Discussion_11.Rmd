@@ -1,0 +1,74 @@
+---
+title: "Data605_Discussion605"
+author: "Gabe Abreu"
+date: "11/4/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Discussion 11
+
+I'm going to use the built-in data set USArrests to demonstrate linear regression.
+
+Is there a relationship between urban population and assaults?
+
+```{r USArrests}
+data('USArrests')
+summary(USArrests)
+```
+
+
+The scatter plot can visualize linear relationships between the depdendent variable and indepdendent variable.
+```{r}
+head(USArrests)
+
+scatter.smooth(x=USArrests$UrbanPop, y=USArrests$Assault, main="UrbanPop ~ Assault")
+```
+
+Let's build the linear regression and then print the summary. 
+
+
+
+```{r}
+linear_reg <- lm(UrbanPop ~ Assault, data = USArrests)
+summary(linear_reg)
+
+```
+The p value is greater than 0.05, which means it's not statistically significant.
+
+Plotting the linear regression with a scatter plot.
+```{r}
+ggplot(data = USArrests, aes(x = UrbanPop, y = Assault)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE)
+
+```
+
+Residual Plot
+```{r}
+assault.res = resid(linear_reg)
+
+ plot(fitted(linear_reg), assault.res) 
+ abline(0,0)
+ 
+ 
+hist(assault.res)
+
+```
+
+
+
+
+Q-Q Plot
+
+The plot below shows there are outliers at both ends of the dat, but more so towards upper quantiles. 
+```{r}
+qqnorm(resid(linear_reg))
+qqline(resid(linear_reg))
+```

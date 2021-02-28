@@ -1,0 +1,112 @@
+---
+title: "Data605_Assignment7_GA"
+author: "Gabe Abreu"
+date: "10/11/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 Assignment # 7 
+
+1. Let X1, X2, . . . , Xn be n mutually independent random variables, each of
+which is uniformly distributed on the integers from 1 to k. Let Y denote the
+minimum of the Xi’s. Find the distribution of Y .
+
+Answer:
+
+Since Y is equivalent to the minimum of the Xi's, there is an "k" amount of possibilities that Xi can take: 1, 2, 3,...k. The total possible number of assignments for the collection of random variables  is k^(n). 
+
+
+When Y = 1, the way to get 1 is k^(n) - (k - 1)^n, with k^n representating the total possibilities and (k-1)^n are the options where none of the random variables equal 1.
+
+P(X=1) = (k^(n) - ((k-1)^n))/ (k^(n))
+
+P(X=2) = ((k^(n) - (k - 2)^(n) - [k^n - (k - 1)^n])/ (k^(n)) -->  (k-1)^n - (k-2)^(n) / (k)^n
+
+P(X = i) = ((k - i + 1)^n - (k-i)^n) / (k)^n
+
+## Part 2
+
+2. Your organization owns a copier (future lawyers, etc.) or MRI (future doctors).
+
+This machine has a manufacturer’s expected lifetime of 10 years. This means
+that we expect one failure every ten years. (Include the probability statements
+and R Code for each part.).
+
+a. What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a geometric. (Hint: the probability is equivalent to not failing during the first 8 years..)
+
+```{r}
+fail_p <- 1/10
+
+#probability of the machine not failing 
+success_p <- 1 - fail_p
+
+#use p_geom formula to model geometric
+geometric <-  1 - pgeom(8-1, fail_p)
+geometric
+
+#Expected value
+value_geomtric <- 1/fail_p
+value_geomtric
+
+#Standard Deviation
+sd_geo <- sqrt(success_p/(fail_p)^2)
+
+sd_geo
+```
+
+b. What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as an exponential. 
+
+```{r}
+lambda <- 1/10
+
+expoential_p <- pexp(8, lambda, lower.tail = FALSE)
+expoential_p
+
+
+#Expected Value
+expected_exp_val <- 1/lambda
+expected_exp_val
+
+#STD Value
+
+expo_sd <- sqrt(1/(lambda^2))
+expo_sd
+```
+
+c. What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a binomial. (Hint: 0 success in 8 years) 
+```{r}
+p <- .1
+complement <- 1 - p
+success <- 0
+n <- 8
+
+binomial_p <- dbinom(success, n, p)
+binomial_p
+
+
+#Expected value
+binomial_exp_value <- n * p
+binomial_exp_value
+
+# STD Value
+binomial_sd <- sqrt(n * p * complement)
+binomial_sd
+```
+d. What is the probability that the machine will fail after 8 years?. Provide also the expected value and standard deviation. Model as a Poisson.
+```{r}
+lambda <- 8/10
+
+ppois(0, lambda = lambda)
+
+#Expected Value
+Expected_pois_val <- lambda
+Expected_pois_val
+
+#Standard Deviation
+standard_pois_dev <- sqrt(lambda)
+standard_pois_dev
+```

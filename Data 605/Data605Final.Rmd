@@ -1,0 +1,433 @@
+---
+title: "Data605 Final"
+author: "Gabe Abreu"
+date: "12/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(stats)
+library(DataExplorer)
+library(Rmisc)
+library(caret)
+library(leaps)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 Final
+
+# Problem 1.
+
+Using R, generate a random variable X that has 10,000 random uniform numbers from 1 to N, where N can be any number of your choosing greater than or equal to 6.  Then generate a random variable Y that has 10,000 random normal numbers with a mean of mu =sigma=(N+1)/2
+
+```{r}
+#set.seed function ensures results are reproducible
+set.seed(100)
+
+#create variables
+N <- 8
+mu <- (N + 1)/2
+devi <- mu
+```
+Probability.   Calculate as a minimum the below probabilities a through c.  Assume the small letter "x" is estimated as the median of the X variable, and the small letter "y" is estimated as the 1st quartile of the Y variable.  Interpret the meaning of all probabilities.
+```{r}
+X <- runif(10000, min=1, max=6)
+Y <- rnorm(10000, mean= mu, sd=devi)
+
+
+#Graph histograms to show distribution
+plot_histogram(X)
+plot_histogram(Y)
+
+
+
+#create little x and y
+
+# Assume the small letter "x" is estimated as the median of the X variable
+x <- median(X)
+
+# small letter "y" is estimated as the 1st quartile of the Y variable
+y <- quantile(Y, 0.25)
+```
+
+1a.P(X>x | X>y)
+Reference: https://stats.stackexchange.com/questions/391756/using-conditional-probability-to-calculate-sentiment-score-probability
+
+```{r}
+#Means conditional probability  -> P(X>x and X>y)/P(X>y) --> P(AB)/P(B)
+#Find the determine cases where B (...or the second case in our situation) is true and given B where A is also true. 
+sum(X>x & X>y) / sum(X>y)
+```
+
+1b.P(X>x, Y>y)
+```{r}
+#Both are independent events
+#Formula used P( A and B) = P(A)P(B)//Finding the intersection of A and B, both occur simulateneously
+#Length of both X and Y are 10000
+
+sum(X>x & Y>y)/length(X)
+```
+
+1c.P(X<x | X>y)
+```{r}
+sum(X<x & X>y)/sum(X>y)
+```
+
+
+
+2. Investigate whether P(X>x and Y>y)=P(X>x)P(Y>y) by building a table and evaluating the marginal and joint probabilities
+```{r}
+#Start the creation of the table
+X_grt_x_Y_grt_y <- sum(X>x & Y>y)
+
+
+X_lsr_x_Y_lsr_y <- sum(X<x & Y<y)
+
+
+X_grt_x_Y_lsr_y <- sum(X>x & Y<y)
+
+
+X_lsr_x_Y_grt_y <- sum(X<x & Y>y)
+
+
+table <- matrix(c(X_grt_x_Y_grt_y, X_grt_x_Y_lsr_y, X_lsr_x_Y_grt_y, X_lsr_x_Y_lsr_y), nrow=2, ncol=2)
+colnames(table) <- c('X > x', ' X < x')
+rownames(table) <- c('Y > y', 'Y < y')
+print(table)
+
+#P(X>x and Y>y)
+a <- 3755 / 10000
+
+#P(X>x)P(Y>y)
+b <- sum(X>x & Y>y)/10000
+
+Are_Equal <- a == b
+Are_Equal
+```
+P(X>x and Y >y) does equal the probability of P(X>x)P(Y>y)
+
+3. Check to see if independence holds by using Fisher’s Exact Test and the Chi Square Test.  What is the difference between the two? Which is most appropriate?
+```{r}
+
+#Run Fisher test
+fisher.test(table)
+
+
+#Chi Square Test
+chisq.test(table)
+```
+The p-values for both tests are very large (significantly above the 0.05), therefore we fail to reject the null-hypothesis. These events are indeed indepdent. 
+
+The chi-squared test is an appropriate approximation when the sample is large, while the Fisher exact test runs a precise procedure for small-sized samples. (reference: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5426219/#:~:text=The%20chi%2Dsquared%20test%20applies,especially%20for%20small%2Dsized%20samples.) Since the case is large, I would say the chi-test is most appropriate.
+
+
+
+# Problem 2.
+
+You are to register for Kaggle.com (free) and compete in the House Prices: Advanced Regression Techniques competition.  https://www.kaggle.com/c/house-prices-advanced-regression-techniques .  I want you to do the following.
+
+Preliminary
+```{r}
+#Load Data
+
+#Train
+train <- read.csv("train.csv", header = TRUE, sep=',')
+
+#Test
+test <- read.csv("test.csv", header = TRUE, sep=',')
+```
+
+2a.
+
+Descriptive and Inferential Statistics
+
+Provide univariate descriptive statistics and appropriate plots for the training data set.  Provide a scatterplot matrix for at least two of the independent variables and the dependent variable. Derive a correlation matrix for any three quantitative variables in the dataset.  Test the hypotheses that the correlations between each pairwise set of variables is 0 and provide an 80% confidence interval.  Discuss the meaning of your analysis.  Would you be worried about familywise error? Why or why not?
+
+Descriptive Statistics
+```{r}
+##View the first five rows of the dataset
+head(train)
+
+#Find out total rows and columns
+dim(train)
+
+#Lets view the data types of the variables 
+glimpse(train)
+
+
+#Overall statistics
+summary(train)
+
+
+#View how the variables are skewed
+plot_histogram(train)
+
+```
+
+Provide a scatterplot matrix for at least two of the independent variables and the dependent variable.
+The 2 independent variables:
+X1stFlrSF : First floor square feet
+GrLivArea: Above ground living area
+
+Dependent variable:
+SalePrice: sale price of the house
+```{r}
+plot(train$X1stFlrSF, train$SalePrice,
+     main = "First Floor Sq Ft vs Sale Price",
+     xlab = "Sq Ft",
+     ylab = 'Sale Price')
+```
+```{r}
+plot(train$GrLivArea, train$SalePrice,
+     main = "Above Ground Living Area vs Sale Price",
+     xlab = "Sq Ft",
+     ylab = 'Sale Price')
+
+```
+
+Derive a correlation matrix for any three quantitative variables in the dataset
+```{r}
+corr_matrix <- cor(train[c("OverallQual", "GrLivArea", "SalePrice")])
+corr_matrix
+``` 
+
+Test the hypotheses that the correlations between each pairwise set of variables is 0 and provide an 80% confidence interval
+```{r}
+cor.test(train$OverallQual, train$SalePrice, conf.level = 0.8)
+
+cor.test(train$OverallQual, train$GrLivArea, conf.level = 0.8)
+
+cor.test(train$GrLivArea, train$SalePrice, conf.level = 0.8)
+```
+The three tests show a p-value that is much lower than the significant p-valuce of 0.05, meaning the null hypothesis can be rejected and the true correlation is not 0 for the 3 chosen variables.
+
+
+2b. Linear Algebra and Correlation
+
+Linear Algebra and Correlation.  Invert your correlation matrix from above. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. Conduct LU decomposition on the matrix
+
+```{r}
+#correlation matrix
+corr_matrix
+
+#invert the matrix
+inverted_corr_matrix = solve(corr_matrix)
+inverted_corr_matrix
+
+
+#multiply correlation matrix by precision matrix
+corr_matrix %*% inverted_corr_matrix
+
+#multiply the inverted matrix by the original correlation matrix
+inverted_corr_matrix %*% corr_matrix
+
+```
+Conduct LU decomposition on the matrix
+```{r}
+library(Matrix)
+LU <- lu(corr_matrix)
+
+lower <- expand(LU)$L
+lower
+
+upper <- expand(LU)$U
+upper
+
+
+lower %*% upper
+```
+
+
+
+2c. Calculus-Based Probability & Statistics
+
+ Calculus-Based Probability & Statistics.  Many times, it makes sense to fit a closed form distribution to data.  Select a variable in the Kaggle.com training dataset that is skewed to the right, shift it so that the minimum value is absolutely above zero if necessary.  Then load the MASS package and run fitdistr to fit an exponential probability density function.  (See  https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html ).  Find the optimal value of lambda for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, lambda).  Plot a histogram and compare it with a histogram of your original variable. Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF).   Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data.  Discuss.
+ 
+ Based on the plot of histograms, there are number of variables that are skewed to the right. For the purposes of this problem, I am choosing Unfinished square feet of basement area (BsmtUnfSF. 
+```{r}
+library(MASS)
+
+plot_histogram(train$BsmtUnfSF)
+
+summary(train$BsmtUnfSF)
+```
+
+The variable needs to be shifted since the minimum is zero. 
+```{r}
+shifted_var <- train$BsmtUnfSF + 0.5
+summary(shifted_var)
+```
+
+Then load the MASS package and run fitdistr to fit an exponential probability density function
+```{r}
+fitted_var <- fitdistr(shifted_var, "exponential")
+
+
+#Calculate lambda
+lambda <- fitted_var$estimate
+lambda
+```
+Find the optimal value of lambda for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, lambda))
+```{r}
+exponential <- rexp(1000, lambda)
+
+
+# Plot a histogram and compare it with a histogram of your original variable
+par(mfrow = c(1,2))
+plot_histogram(exponential)
+plot_histogram(train$TotalBsmtSF)
+
+```
+Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF). Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data
+```{r}
+#Find the 5th and 95th percentile
+qexp(c(0.05,0.95), rate = lambda)
+
+#Generate a 95% confidence interval
+CI(train$BsmtUnfSF, 0.95)
+
+#Find empirical 5th and 95th percentile
+quantile(train$BsmtUnfSF, c(0.05, 0.95))
+```
+The exponential model is more skewed than the empirical.
+
+2d. Model
+
+Build some type of multiple regression  model and submit your model to the competition board.  Provide your complete model summary and results with analysis.  Report your Kaggle.com user name and score.
+
+Let's do some mathematical investigating and see the correlation/p-values between all variables and Sale Price. But, first, we need to do some data cleaning and remove non-numeric variables for the analysis. 
+
+```{r}
+numeric_train_data <- select_if(train, is.numeric)
+
+#Make sure all the variables are data type integers
+glimpse(numeric_train_data)
+
+
+#Check for NA values
+apply(numeric_train_data, 2, function(x) any(is.na(x)))
+
+#We see that there are missing values
+#The columns are LotFrontage, GarageYrBlt, MasVnrArea
+
+res <- cor(numeric_train_data[-1], numeric_train_data$SalePrice)
+res
+
+
+#The NA values in those forces cor to return NA when doing the correlation test
+#I could drop the NA values, replace values with mean or median
+#reference: https://www.guru99.com/r-replace-missing-values.html
+#I'm going to drop since the data has 1460 observations
+
+#numeric_train_drop <- numeric_train_data %>% na.omit()
+#dim(numeric_train_drop)
+
+numeric_train_data[is.na(numeric_train_data)] <- 0
+
+numeric_train_drop <- numeric_train_data
+#The new dataset is 1121 observations of 38 variables
+```
+
+Let's look at the correlation values with the new dataset with no NA values.
+```{r}
+res_new <- cor(numeric_train_drop[-1], numeric_train_drop$SalePrice)
+res_new
+
+```
+
+Now, we will create a linear model with multiple variables with relatively high correlation. 
+```{r}
+high_cor_var <- numeric_train_drop %>%dplyr:: select(OverallQual, TotalBsmtSF, X1stFlrSF, GrLivArea, GarageCars, GarageArea, FullBath, SalePrice)
+
+high_cor_lm <- lm(SalePrice ~., data=high_cor_var)
+summary(high_cor_lm)
+
+```
+
+StepWise Regression Model
+ref: http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/154-stepwise-regression-essentials-in-r/
+
+```{r}
+#set up cross-validation (resampling procedure), K refers to the number of groups that a given data sample is split into
+train.control <- trainControl(method ='cv', number=10)
+
+step.model <- train(SalePrice ~., data = numeric_train_drop,
+                    method = "leapSeq",
+                    tuneGrid = data.frame(nvmax = 5:15),
+                    trControl = train.control
+                    )
+#RMSE and MAE are different metrics that measure prediction error. You want low RMSE and MAE values
+#High Rsquared results the better
+step.model$results
+
+#Best Tune shows which model is best, and the model with 15 variables is the best.
+step.model$bestTune
+```
+
+```{r}
+summary(step.model$finalModel)
+```
+
+
+
+```{r}
+coef(step.model$finalModel, 15)
+```
+
+
+After testing manual backward regression, automated stepwise regession with the caret package, and using the MASS package's stepwise regression. It seems like the MASS package stepwise regression offers the best model. 
+
+Let's test it.
+```{r}
+# Train the model
+step2.model <- train(SalePrice ~., data = numeric_train_drop,
+                    method = "lmStepAIC", 
+                    trControl = train.control,
+                    trace = FALSE
+                    )
+# Model accuracy
+step2.model$results
+# Final model coefficients
+step2.model$finalModel
+# Summary of the model
+summary(step2.model$finalModel)
+
+```
+
+I used step2.model$modelinfo to get the linear model equation.
+```{r}
+MASS_sr <- lm(formula = SalePrice ~ MSSubClass + LotFrontage + LotArea + 
+    OverallQual + OverallCond + YearBuilt + MasVnrArea + BsmtFinSF1 + 
+    X1stFlrSF + X2ndFlrSF + BsmtFullBath + FullBath + BedroomAbvGr + 
+    KitchenAbvGr + TotRmsAbvGrd + Fireplaces + GarageCars + WoodDeckSF + 
+    ScreenPorch + PoolArea, data = numeric_train_drop)
+
+summary(MASS_sr)
+```
+
+The residuals look normally distributed, looks okay to proceed to test on test data. 
+
+```{r}
+hist(MASS_sr$residuals, xlab = "Residuals", ylab = "", breaks = 200)
+
+qqnorm(MASS_sr$residuals)
+qqline(MASS_sr$residuals)
+```
+
+# Test The Model
+```{r}
+test[is.na(test)] <- 0
+
+results <- predict(MASS_sr, test)
+
+prediction_frame <- data.frame(cbind(Id = test$Id, SalePrice = results))
+
+write.csv(prediction_frame, file= 'GAbreu_kaggle.csv', row.names = FALSE)
+
+
+#Kaggle Score 
+
+knitr::include_graphics('Kaggle Score.jpg')
+
+```

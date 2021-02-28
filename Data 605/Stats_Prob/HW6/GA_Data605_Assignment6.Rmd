@@ -1,0 +1,202 @@
+---
+title: "GAbreu_HW6"
+author: "Gabe Abreu"
+date: "10/3/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 Assignment #6
+
+
+1. A box contains 54 red marbles, 9 white marbles, and 75 blue marbles. If a marble is randomly selected from the box, what is the probability that it is red or blue? Express your answer as a fraction or a decimal number rounded to four decimal places.
+
+```{r cars}
+red = 54
+white = 9
+blue = 75
+
+total = red + white + blue
+
+prob_red_or_blue <- (red + blue)/total
+round(prob_red_or_blue, 4)
+```
+
+2. You are going to play mini golf. A ball machine that contains 19 green golf balls, 20 red golf balls, 24 blue golf balls, and 17 yellow golf balls, randomly gives you your ball. What is the probability that you end up with a red golf ball? Express your answer as a simplified fraction or a decimal rounded to four decimal places.
+
+
+```{r}
+g_golf_balls = 19
+r_golf_balls = 20
+b_golf_balls = 24
+y_golf_balls = 17
+
+total <- g_golf_balls + r_golf_balls + b_golf_balls + y_golf_balls
+
+red_ball_prob <- r_golf_balls/total
+round(red_ball_prob, 4)
+```
+
+3. A pizza delivery company classifies its customers by gender and location of residence. The research department has gathered data from a random sample of 1399 customers. The data is summarized in the table below
+```{r}
+pizza_frame <- data.frame(c(81,116, 215, 130, 129), c(228,79,252,97,72), c(309,195,467,227,201))
+names(pizza_frame) <- c("Males", "Females", "Total")
+row.names(pizza_frame) <- c("Apartment", "Dorm", "With Parents(s)", "Sorority/Fraterniy House", "Other")
+
+pizza_frame
+
+```
+What is the probability that a customer is not male or does not live with parents? Write your answer as a fraction or a decimal number rounded to four decimal places
+```{r}
+P_female = sum(pizza_frame$Females)/sum(pizza_frame$Total)
+
+P_Not_Parents = 1 - (467/sum(pizza_frame$Total))
+
+P_Female_Not_Parents = (sum(pizza_frame$Females) - 252)/sum(pizza_frame$Total)
+
+Answer <- (P_female + P_Not_Parents) - P_Female_Not_Parents
+
+round(Answer, 4)
+
+```
+4. Determine if the following events are independent.
+    Going to the gym. Losing weight.
+    
+Answer: Dependent. Going to the gym and presumably exercising is going to affect whether you lose weight.
+
+5. A veggie wrap at City Subs is composed of 3 different vegetables and 3 different condiments wrapped up in a tortilla. If there are 8 vegetables, 7 condiments, and 3 types of tortilla available, how many different veggie wraps can be made?
+```{r}
+veggie_ans <- choose(8,3) * choose(7,3) * choose(3,1)
+veggie_ans
+```
+
+6. Determine if the following events are independent.
+
+Jeff runs out of gas on the way to work. Liz watches the evening news. 
+
+Answer: Independent. 
+
+7. The newly elected president needs to decide the remaining 8 spots available in the cabinet he/she is appointing. If there are 14 eligible candidates for these positions (where rank matters), how many different ways can the members of the cabinet be appointed?
+```{r}
+factorial(14)/factorial(14-8)
+```
+
+8. A bag contains 9 red, 4 orange, and 9 green jellybeans. What is the probability of reaching into the bag and randomly withdrawing 4 jellybeans such that the number of red ones is 0, the number of orange ones is 1, and the number of green ones is 3? Write your answer as a fraction or a decimal number rounded to four decimal places.
+
+```{r}
+bag_prob <- choose(9,0) * choose(4,1) * choose(9,3)
+answer_jelly <- bag_prob/choose(22, 4)
+round(answer_jelly, 4)
+```
+
+9.
+```{r}
+factorial(11)/factorial(7)
+```
+
+10.Describe the complement of the given event.
+
+67% of subscribers to a fitness magazine are over the age of 34. 
+```{r}
+Complement = 1-0.67
+
+Complement
+print("33% of the other subscribers are under or at 34 years of age.")
+```
+
+11. If you throw exactly three heads in four tosses of a coin you win $97. If not, you pay me $30.
+
+Step 1. Find the expected value of the proposition. Round your answer to two decimal places.
+```{r}
+proposition_win <- dbinom(3, 4, 0.5, log = FALSE)
+prop_loss <- 1 - proposition_win
+
+expected_value <- (97*proposition_win)-(30 * prop_loss)
+round(expected_value, 2)
+
+```
+Step 2. Step 2. If you played this game 559 times how much would you expect to win or lose? (Losses must be entered as negative.)
+```{r}
+step2_answer <- expected_value * 559
+
+step2_answer
+```
+
+12.Flip a coin 9 times. If you get 4 tails or less, I will pay you $23. Otherwise you pay me $26
+
+Step 1. Find the expected value of the proposition. Round your answer to two decimal places.
+```{r}
+series <- seq(1, 4, by = 1)
+prob <- dbinom(series, 9, 0.5, log = FALSE)
+tot_val_prob <- round(sum(prob), 2)
+
+losing_prob <- 1 - tot_val_prob
+answer_12<- (23 * tot_val_prob) - (26 * losing_prob)
+answer_12
+```
+
+Step 2. If you played this game 994 times how much would you expect to win or lose? (Losses must be entered as negative.)
+```{r}
+expect_win_loss <- answer_12 * 994
+expect_win_loss
+```
+
+
+13. The sensitivity and specificity of the polygraph has been a subject of study and debate for years. A 2001 study of theuse of polygraph for screening purposes suggested that the probability of detecting a liar was .59 (sensitivity) and that the probability of detecting a "truth teller" was .90 (specificity). We estimate that about 20% of individuals selected for the screening polygraph will lie.
+
+Assumption: 1,000 individuals are used
+```{r}
+prob_liar <- .2
+polygraph_liar <- .59
+polygraph_truth <- .9
+
+total_liars <- 1000 * prob_liar
+total_truth_sayers <- 1000 - total_liars
+
+polygraph_correct_liar <- total_liars * polygraph_liar
+polygraph_correct_truth <- total_truth_sayers * polygraph_truth
+
+polygraph_inc_liar <- total_liars - polygraph_correct_liar
+polygraph_inc_truth <- total_truth_sayers - polygraph_correct_truth
+
+```
+
+```{r}
+t1 <- 118 + 720
+t2 <- 82 + 80
+t3 <- 200 + 800
+
+df <- data.frame(c(polygraph_correct_liar,polygraph_inc_liar,total_liars), c(polygraph_correct_truth, polygraph_inc_truth, total_truth_sayers), c(t1, t2, t3))
+
+
+names(df) <- c("Liars", "Truth", "Total")
+row.names(df) <- c("Polygraph Correct", "Polygraph Incorrect", "Total")
+
+df
+```
+
+a. What is the probability that an individual is actually a liar given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+```{r}
+actual_liar_prob <- df[1,1]/(df[2,2] + df[1,1]) 
+actual_liar_prob
+```
+
+b. What is the probability that an individual is actually a truth-teller given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+```{r}
+actual_truth_prob <- df[1,2]/(df[1,2] + df[2,1])
+actual_truth_prob
+```
+c.What is the probability that a randomly selected individual is either a liar or was identified as a liar by the
+polygraph? 
+
+Answer: 0.28
+```{r}
+#Add up the real liars (detected or not) and the amount of people incorrectly identified as a liar
+(polygraph_correct_liar + polygraph_inc_truth + polygraph_inc_liar)/1000
+
+```

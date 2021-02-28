@@ -1,0 +1,87 @@
+---
+title: "GA_HW11_Data605"
+author: "Gabe Abreu"
+date: "11/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(psych)
+library(stats)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 HW11
+
+Using the “cars” dataset in R, build a linear model for stopping distance as a function of speed and replicate the analysis of your textbook chapter 3 (visualization, quality evaluation of the model, and residual analysis.)
+
+
+```{r}
+#Load the cars dataset into a variable as a data frame
+cars <- datasets::cars
+
+
+#Let's investigate the data
+summary(cars)
+
+describe(cars)
+
+
+#Using the lm formula to build the linear regression model
+cars.lm <- lm(dist ~ speed, data=cars)
+
+#The summary will give us coefficients as well the slope and intercept that can be used to build the linear regression model evaluating the relationship between distance and speed.
+summary(cars.lm)
+```
+What's important to take note is the p value which is less than 0.05, making it statistically significant. The intercept is -17.5791 and the slope is 3.9324, meaning the distance changes by 3.9324 per changes in speed.  
+
+The adjusted R^2 is 0.6438. 
+
+## Visualizing the Data
+```{r}
+#ggplot without getting the slope and intercept manually
+ggplot(data = cars, aes(x = speed, y = dist)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE)
+
+#ggplot with slope and intercept gotten from cars.lm
+
+mx <- coef(cars.lm)[1]
+slope <- coef(cars.lm)[2]
+
+ggplot(cars.lm, aes(cars$speed, cars$dist)) +
+  geom_point() +
+  geom_abline(slope = slope, intercept = mx, show.legend = TRUE)
+```
+
+## Model Diagnostic
+
+In order to evaluate whether the linear model is reliable, 3 things need to be accounted for
+a)linearity
+b)normal residuals
+3)variability
+
+Let's check for variability:
+```{r}
+ggplot(data = cars.lm, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Fitted values") +
+  ylab("Residuals")
+
+```
+
+There is no pattern in the plot above which is a sign of linearity. 
+
+Check for Normal Residuals:
+```{r}
+ggplot(data = cars.lm, aes(x = .resid)) +
+  geom_histogram(binwidth = 10) +
+  xlab("Residuals")
+
+qqnorm(resid(cars.lm))
+qqline(resid(cars.lm))
+```
+
+The residuals seem close to normally distributed even though the histogram and Q-Q plot show outliers on the far right end. The residuals don't have to be perfectly normal but close enough. I would conclude that it is a viable model.

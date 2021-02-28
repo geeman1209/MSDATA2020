@@ -1,0 +1,107 @@
+---
+title: "Discussion_12"
+author: "Gabe Abreu"
+date: "11/12/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(corrplot)
+library(ggplot2)
+library(stats)
+library(Hmisc)
+library(PerformanceAnalytics)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Discussion 12
+
+This data set was downloaded from Kaggle and sourced from the World Health Organization. I want to examine variables that are positively correlated with life expectancy. 
+
+```{r}
+LE_data <- read.csv('Life Expectancy Data.csv')
+
+head(LE_data)
+
+summary(LE_data)
+```
+
+
+```{r}
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+LE_data_df <- LE_data[ ,4:length(LE_data)]
+
+LE_data_df.cor = cor(LE_data_df, method = c("spearman"))
+
+newCorr <- rcorr(as.matrix(LE_data_df))
+
+flattenCorrMatrix(newCorr$r, newCorr$P)
+
+
+```
+We can see that life expectancy and schooling have a high correlation and a statistically significant p value.
+
+## Including Plots
+
+
+```{r}
+corrplot(newCorr$r, type="upper", order="hclust", 
+         p.mat = newCorr$P, sig.level = 0.05, insig = "blank")
+
+chart.Correlation(LE_data_df, histograme=TRUE, pch=19)
+
+palette = colorRampPalette(c("green", "white", "red")) (10)
+heatmap(x = newCorr$r, scale="column", col = palette, symm = TRUE)
+
+```
+
+Schooling and life expectancy are positively correlated. Let's create a linear regression model and later evaluate it.
+
+```{r}
+lif <- LE_data_df$Life.expectancy
+sch <- LE_data_df$Schooling
+
+lif_sch_lm <- lm(sch ~ lif)
+
+
+summary(lif_sch_lm)
+```
+
+
+
+```{r}
+ggplot(data = LE_data_df, aes(x = Schooling, y = Life.expectancy)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE)
+
+```
+Examining the Residuals
+
+```{r}
+life_exp.res = resid(lif_sch_lm)
+
+ plot(fitted(lif_sch_lm), life_exp.res) 
+ abline(0,0)
+ 
+ 
+hist(life_exp.res)
+
+
+
+qqnorm(resid(lif_sch_lm))
+qqline(resid(lif_sch_lm))
+
+
+```

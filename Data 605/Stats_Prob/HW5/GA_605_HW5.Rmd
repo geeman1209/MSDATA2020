@@ -1,0 +1,70 @@
+---
+title: "GA_605_HW5"
+author: "Gabe Abreu"
+date: "9/27/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment Week 5
+
+Choose independently two numbers B and C at random from the interval [0, 1] with
+uniform density. Prove that B and C are proper probability distributions.
+Note that the point (B,C) is then chosen at random in the unit square.
+Find the probability that
+
+```{r}
+#Create the variables b and c, using the function runif
+#runif will run 1000, and not reach the min or max 
+b <- runif(1000, min = 0, max = 1)
+c <- runif(1000, min = 0, max = 1)
+
+#Let's use historgrams to check the distributions of the b and c variables, both are about evenly distributed
+hist(b)
+
+hist(c)
+```
+
+(a) B + C < 1/2
+
+```{r}
+#Sum gives the total number of values that meet the condition, in this case values below 0.5
+ans_A <- sum(b + c < 0.5)
+
+#Divide by 1000 to calculate the probability
+ans_A <- ans_A/1000
+
+paste("The probability is", ans_A)
+```
+
+(b) BC < 1/2
+```{r}
+ans_B <- sum(b*c < 0.5)/1000
+paste("The probability is", ans_B)
+```
+
+(c) |B − C| < 1/2
+```{r}
+ans_C <- sum(abs(b-c) < 0.5)/1000
+paste("The probability is", ans_C)
+```
+
+(d) max{B,C} < 1/2
+```{r}
+#Used Max function and the answer was .001, so used the pmax and pmin functions
+ans_D <- sum(pmax(b,c) < 0.5)/1000
+paste("The probability is", ans_D)
+```
+
+(e) min{B,C} < 1/2
+```{r}
+ans_E <- sum(pmin(b,c) < 0.5)/1000
+paste("The probability is", ans_E)
+```
+
+

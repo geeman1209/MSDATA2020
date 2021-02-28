@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+**Principles of Data Visualization and Introduction to ggplot2**
+
+I have provided you with data about the 5,000 fastest growing companies in the US, as compiled by Inc. magazine. lets read this in:
+
+```{r}
+library(psych)
+library(dplyr)
+library(ggplot2)
+inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module1/Data/inc5000_data.csv", header= TRUE)
+
+```
+
+And lets preview this data:
+
+```{r}
+
+head(inc)
+
+```
+```{r}
+
+summary(inc)
+
+```
+
+Think a bit on what these summaries mean. Use the space below to add some more relevant non-visual exploratory information you think helps you understand this data:
+
+```{r}
+
+# Insert your code here, create more chunks as necessary
+
+#Check structure of data
+str(inc)
+
+#look at the bottom of the data
+tail(inc)
+
+
+#Check for missing variables across all columns
+colSums(is.na(inc))
+
+#Employees column has missing values 
+```
+
+```{r}
+describe(inc)
+
+#count for distinct values of state
+#Top 36 states have 100 or more companies
+count_state <- dplyr::count(inc,State)
+
+#count for distinct values of City
+#count_city <- dplyr::count(inc, City)
+#Decided against using distinct count for cities as 1519 rows were calcultated, not a useful summarization
+
+#count for distinct values of industry
+count_industry <- dplyr::count(inc, Industry)
+```
+## Question 1
+
+Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
+
+```{r}
+
+# Answer Question 1 here
+
+desc_cs <- count_state %>% arrange(desc(n))
+
+
+#the multiple colors helps distinguish the many states presented in the graph
+ggplot(desc_cs, aes(x=reorder(State, n),y=n, color=State)) +
+  geom_bar(stat='identity', width = 0.5, color = 'black', fill=rainbow(52)) +
+  coord_flip() + 
+  labs(title = 'Company Distribution By State', x='', y='')+
+  scale_y_continuous(breaks = seq(0, 700, 100))+
+  theme_classic()
+
+
+#source: https://stackoverflow.com/questions/29587881/increase-plot-size-width-in-ggplot2
+ggsave(file="Distribution By State.png", width=10, height=5, dpi=300)
+
+```
+
+## Quesiton 2
+
+Lets dig in on the state with the 3rd most companies in the data set. Imagine you work for the state and are interested in how many people are employed by companies in different industries. Create a plot that shows the average and/or median employment by industry for companies in this state (only use cases with full data, use R's `complete.cases()` function.) In addition to this, your graph should show how variable the ranges are, and you should deal with outliers.
+
+Based on the graphic and data from above, the state with the 3rd most companies is NY. So we will be digging into the employment of different industries within the state of NY.
+
+```{r}
+
+# Answer Question 2 here
+
+inc_complete <- inc[complete.cases(inc),]
+
+ny_industry <- inc_complete %>%filter(State == 'NY')
+
+#Seperated Business products and services, they had an outsized number that distorted the rest of the visuals
+
+ny_industry_business <- ny_industry %>% filter(Industry == 'Business Products & Services')
+
+nyi_no_business <- ny_industry %>% filter(Industry != 'Business Products & Services')
+
+#Going to utilize boxplots to illustrate the range/average/median employment by industry
+# source: https://www.quora.com/What-is-the-best-graph-to-illustrate-ranges-in-a-data-series?share=1
+
+ggplot(nyi_no_business, aes(x = Industry, y=Employees)) + 
+    coord_flip() +
+    geom_boxplot(fill="seagreen", outlier.color = "red", outlier.size = 1) + 
+    ylim(0,3000)
+
+#The outlier in for the Business Products and Services created a very flat boxplot, I played with minimizing the outlier, but minimizing the size didn't change the overall shape
+ggplot(ny_industry_business, aes(x = Industry, y=Employees)) + 
+    geom_boxplot(fill="seagreen", outlier.color = "red", outlier.size = 1) 
+    
+
+
+ggplot(ny_industry, aes(reorder(x=Industry, Employees), y = Employees)) + 
+    stat_summary(fun = "mean", geom = "bar") +
+    coord_flip() +
+    labs(title = "Avg. Employees per Industry", y = "Average")+
+    theme_classic()
+
+```
+
+## Question 3
+
+Now imagine you work for an investor and want to see which industries generate the most revenue per employee. Create a chart that makes this information clear. Once again, the distribution per industry should be shown.
+
+The revenue per employee here is shown for the national dataset.
+```{r}
+
+# Answer Question 3 here
+
+
+#Let's calculate a new field, revenue per employee
+
+rev_per_employee <- inc_complete %>% group_by(Industry) %>% summarise(revenue=sum(Revenue), employees=sum(Employees), revenue_per_employee=revenue/employees)
+
+
+ggplot(rev_per_employee, aes(x=reorder(Industry, revenue_per_employee),y=revenue_per_employee)) +
+  geom_bar(stat='identity', width = 0.5, color = 'black', fill='skyblue') +
+  coord_flip() + 
+  labs(title = 'Revenue per Employee', x='', y='')+
+  theme_classic()
+
+```
+
+Sources:
+https://www.tutorialgateway.org/r-ggplot2-boxplot/
+
+https://www.quora.com/What-is-the-best-graph-to-illustrate-ranges-in-a-data-series?share=1
+
+https://stackoverflow.com/questions/29587881/increase-plot-size-width-in-ggplot2
+
+https://stackoverflow.com/questions/11857935/plotting-the-average-values-for-each-level-in-ggplot2#11858054
+

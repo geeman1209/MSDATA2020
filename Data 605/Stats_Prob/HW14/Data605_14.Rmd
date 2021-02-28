@@ -1,0 +1,30 @@
+---
+title: "HW_14"
+author: "Gabe Abreu"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 HW 14
+
+```{r}
+knitr::include_graphics('HW14.JPG')
+```
+
+```{r}
+knitr::include_graphics('14_1.jpg')
+```
+
+
+```{r}
+knitr::include_graphics('14_2.jpg')
+```
+
+
+```{r}
+knitr::include_graphics('14_3.jpg')
+```

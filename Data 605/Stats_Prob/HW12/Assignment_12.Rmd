@@ -1,0 +1,136 @@
+---
+title: "HW12"
+author: "Gabe Abreu"
+date: "11/15/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 #12
+
+
+1. Provide a scatterplot of LifeExp~TotExp, and run simple linear regression. Do not transform the variables. Provide and interpret the F statistics, R^2, standard error,and p-values only. Discuss whether the assumptions of simple linear regression met.
+```{r}
+who_info <- read.csv('who.csv')
+
+head(who_info)
+
+simpleRegression <- lm(LifeExp ~ TotExp, data = who_info)
+plot(who_info$TotExp, who_info$LifeExp)
+abline(simpleRegression)
+```
+
+
+```{r}
+summary(simpleRegression)
+
+
+
+#Residuals
+simple.res = resid(simpleRegression)
+
+ plot(fitted(simpleRegression), simple.res) 
+ abline(0,0)
+ 
+ 
+hist(simple.res)
+
+```
+
+Q-Q Plots
+```{r}
+qqnorm(resid(simpleRegression))
+qqline(resid(simpleRegression))
+
+```
+
+The F-Statistics suggests there is a relationship between the indepdent and dependent variables. The value of the F statistics is 65.26.
+
+The R^2 represents how well the data fits the model which in this case the value of R-square (0.2577) is slow, indicating the data doesn't fit the model.
+
+The residual standard error is the standard deviation of the residuals, the smaller the value the better. In in our model the residual standard error is high at 9.371
+
+The p-value shows statistical significance at 7.71e-14.
+
+As it stands, this is not a good model. 
+
+2. Raise life expectancy to the 4.6 power (i.e., LifeExp^4.6). Raise total expenditures to the 0.06 power (nearly a log transform, TotExp^.06). Plot LifeExp^4.6 as a function of TotExp^.06, and r re-run the simple regression model using the transformed variables. Provide and interpret the F statistics, R^2, standard error, and p-values. Which model is "better?"
+```{r}
+who_info$LE2 <- who_info$LifeExp^4.6
+who_info$TE2 <- who_info$TotExp^0.06
+
+simpleRegression2 <- lm(who_info$LE2 ~ who_info$TE2, data = who_info)
+plot(who_info$TE2, who_info$LE2)
+abline(simpleRegression2)
+```
+
+```{r}
+summary(simpleRegression2)
+
+#Residuals
+simple2.res = resid(simpleRegression2)
+
+ plot(fitted(simpleRegression2), simple2.res) 
+ abline(0,0)
+ 
+ 
+hist(simple2.res)
+
+```
+Q-Q Plots
+```{r}
+qqnorm(resid(simpleRegression2))
+qqline(resid(simpleRegression2))
+
+```
+
+The model is better based on the criteria used to judge linear models. 
+
+The F statistics is much higher and p-value is still significant. The R^2 valueu is greatly improved. The residuals show normality and linearity. 
+
+3. Using the results from 3, forecast life expectancy when TotExp^.06 =1.5. Then forecast life expectancy when TotExp^.06=2.5.
+
+The formula is y = -736527910 + 620060216 * x
+```{r}
+predictor <- function(x) {
+    y <- -736527910 + 620060216 * x
+    y <- y^(1/4.6)
+    
+    return(y)
+}
+
+```
+
+totExp^0.6 = 1.5
+```{r}
+predictor(1.5)
+```
+totExp^0.6 = 2.5
+```{r}
+predictor(2.5)
+```
+
+4. Build the following multiple regression model and interpret the F Statistics, R^2, standard error, and p-values. How good is the model?
+LifeExp = b0+b1 x PropMd + b2 x TotExp +b3 x PropMD x TotExp
+
+```{r}
+multiRegression <- lm(LifeExp ~ PropMD + TotExp + PropMD*TotExp, data = who_info)
+summary(multiRegression)
+
+```
+
+The model doesn't work as well as the second model. The residual standard error is high at 8.765. The R^2 value is low at 0.3574 and the F-Statistic is 34.49. The p-value is still significant being well below 0.05. 
+
+5. Forecast LifeExp when PropMD=.03 and TotExp = 14. Does this forecast seem realistic? Why or why not?
+
+```{r}
+expdata <- data.frame(PropMD=0.03, TotExp=14)
+round(predict(multiRegression, expdata))
+```
+
+The value is much too high at 107. Doesn't seem realistic given the rest of the data. 

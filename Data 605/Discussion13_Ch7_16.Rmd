@@ -1,0 +1,64 @@
+---
+title: "Discussion 14"
+author: "Gabe Abreu"
+date: "12/2/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chapter 7 #16 p.360
+find the total area enclosed by the funcƟons f and g
+
+ f(x) = x^3 − 4x^2 + x − 1, g(x) = −x^2 + 2x − 4
+
+```{r}
+#functions f and g 
+f <- function(x) {x^3 - 4*x^2 + x - 1}
+g <- function(x) {-x^2 + 2*x - 4}
+
+
+#Graphed functions 
+curve(f, -2, 4)
+curve(g, -2, 4, add=T)
+
+```
+Graphically, the roots seem to be -1, 1, and 3.
+
+```{r}
+#Find roots using R
+
+root1 <- uniroot(function(x) f(x) - g(x), interval = c(-2, 0))
+root1$root
+
+root2 <- uniroot(function(x) f(x) - g(x), interval = c(0, 2))
+root2$root
+
+root3 <- uniroot(function(x) f(x) - g(x), interval = c(2, 4))
+root3$root
+
+```
+
+Finding the area 
+
+```{r}
+#first function btwn first interval
+f1 <- integrate(f, lower = -1, upper = 1)
+
+#second function btwn first interval
+g1 <- integrate(g, lower = -1, upper = 1)
+
+#############################################
+
+f2 <- integrate(f, lower = 1, upper = 3)
+
+g2 <- integrate(g, lower = 1, upper = 3)
+
+total_area <- (f1$value - g1$value) + (g2$value - f2$value)
+total_area
+```
+

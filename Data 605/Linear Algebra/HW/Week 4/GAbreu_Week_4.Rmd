@@ -1,0 +1,149 @@
+---
+title: "Data 605 - WK4"
+author: "Gabe Abreu"
+date: "9/20/2020"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 605 - Assignment 4
+
+###Problem Set 1
+
+Write code to in R to compute X = A(A^T) and Y = (A^T)A
+```{r code1}
+#Create the matrix A
+A <- matrix(c(1,2,3,-1,0,4), byrow = T, nrow = 2)
+A
+
+
+#Compute X by multiplying A by its transpose
+X <- A%*%t(A)
+X
+
+#Compute Y by multiplying the transpose by A
+Y <- t(A)%*%A
+Y
+```
+Compute the eigenvalues and eigenvectors of X and Y using the built-in commands in R.
+```{r code2}
+eigX <- eigen(X)
+eigY <- eigen(Y)
+```
+
+Eigvenvalues:
+```{r 1}
+#Eigenvalues for X
+eigX$values
+
+#Eigenvalues for Y
+eigY$values
+```
+
+Eigenvectors:
+```{r 2}
+#Eigen vectors for x
+eigX$vectors
+
+
+#Eigenvectors for Y
+eigY$vectors
+```
+
+Compute the the left-singular/singular values/right-singular vectors using svd command
+```{r 3}
+SVD_A <- svd(A)
+
+sing_val <- SVD_A$d #singular values of the given matrix
+
+left_val <- SVD_A$u #left singular vectors of matrix
+
+right_val <- SVD_A$v #right singular vectors of matrix
+```
+Examine the two sets of singular vectors and show that they are indeed eigenvectors of X and  Y.
+```{r 4 }
+#Compare Eigenvectors of X and left values of A
+list(eigX$vectors, left_val)
+
+
+#Compare Eigenvectors of Y and right values of A
+list(eigY$vectors, right_val)
+```
+
+In addition, the two non-zero eigenvalues (the 3rd value will be very close to zero, if not zero) of both X and Y are the same and are squares of the non-zero singular values of A.
+```{r 5}
+#Let's look at the single values without them being squared
+sing_val
+
+#Single values squared
+sq_values <- round(sing_val^2)
+sq_values
+
+round(eigX$values)
+
+round(eigY$values)
+```
+
+## Problem Set 2
+
+```{r code}
+
+myinverse <- function(A) {
+    #Check if matrix is square
+    if(dim(A)[1] != dim(A)[2]){
+        return("Not a square matrix")
+    }
+    
+    #If the matrix is 2x2, this will return the inverse
+    if(dim(A)[1] == 2)
+    {
+       det_1 <- (1/((A[1,1]*A[2,2])-(A[1,2]*A[2,1])))
+       
+       A_2 <- matrix(c(A[2,2], -A[1,2], -A[2,1], A[1,1]), byrow = T, nrow = 2)
+       
+       return (det_1 * A_2)
+    }
+    
+    
+    #Create Co-factor Matrix 
+    C_Matrix <- matrix(rep(0,length(A)),ncol=ncol(A))
+    
+    
+    for (i in 1:ncol(A)) {
+        for (j in 1:nrow(A)) {
+            C_Matrix[i,j] <- (-1)^(i+j)*det(A[-i,-j])
+        }
+    }
+    
+    #Inverse of A is equal to transpose of Co-Factor Matrix divided by the determinant of A
+    B <- t(C_Matrix)/det(A)
+    
+    return(B)
+    
+}
+
+```
+
+
+Let's run some test scenarios
+```{r code2}
+#Test matrix was taken from https://www.mathsisfun.com/algebra/matrix-inverse.html
+test_matrix <- matrix(c(3, 3.5, 3.2, 3.6), byrow = T, nrow = 2)
+test_matrix
+
+test_matrix2 <- matrix(c(6,1,1,4,-2,5,2,8,7), byrow = T, nrow = 3)
+test_matrix2
+
+#Use the built-in solve function (also the website verifies the answer)
+solve(test_matrix)
+solve(test_matrix2)
+
+
+#Test function
+myinverse(test_matrix)
+myinverse(test_matrix2)
+```

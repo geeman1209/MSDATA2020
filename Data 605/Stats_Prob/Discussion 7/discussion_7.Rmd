@@ -1,0 +1,48 @@
+---
+title: "Discussion 7"
+author: "Gabe Abreu"
+date: "10/7/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chapter 6 Question 8
+
+A royal family has children until it has a boy or until it has three children, whichever comes first. Assume that each child is a boy with probability 1/2.
+Find the expected number of boys in this royal family and the expected number of girls.
+
+```{r}
+#Number of Boys -> X
+#All 3 children are girls
+p_x_0 <- (.5)^3
+
+#1 Boy
+p_x_1 <- 1 - p_x_0
+
+#Expected number of boys
+answer_1 <- 0*p_x_0 + 1 * p_x_1
+answer_1
+
+```
+
+```{r}
+#Number of girls -> X1
+
+p_1_boy <- 0.5
+
+#1 Girl 1 Boy
+p_1g_1b <- 0.5^2
+
+#2 Girl 1 Boy
+p_2g_1b <- 0.5^3
+
+#3 Girls
+p_3g <- 0.5^3
+
+#Expected Girls
+answer_2 <- (0*p_1_boy)+(1*p_1g_1b)+(2*p_2g_1b)+(3*p_3g)
+answer_2
+```
