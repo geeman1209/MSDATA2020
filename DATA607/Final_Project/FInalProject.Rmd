@@ -732,7 +732,7 @@ ggplot2::ggplot(polarity_data, aes(reorder(words, polarity), polarity, fill = Se
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, size = 10))+
   xlab("Word")
 ```
-From the frequency of sentiments, we can see, negative sentiments frequency and positive sentiments are equal.
+From the frequency of sentiments, we can see, negative sentiments frequency is much higher than positive sentiments.
 
 To get a clear picture of how positive and negative words are used, I assigned the words with a sentiment using the ‘bing’ lexicon and do a simple count to generate the top 15 most common positive and negative words used in the extracted tweets.
 
