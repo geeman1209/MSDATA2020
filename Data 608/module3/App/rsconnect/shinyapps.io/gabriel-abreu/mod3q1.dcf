@@ -1,0 +1,13 @@
+name: mod3q1
+title:
+username:
+account: gabriel-abreu
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3790104
+bundleId: 4344842
+url: https://gabriel-abreu.shinyapps.io/mod3q1/
+when: 1615770423.95472
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: HW3_Q1.Rmd
