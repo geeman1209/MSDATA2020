@@ -3,10 +3,10 @@ title: "Regression Analysis of Baseball Team Performance"
 author: "Abdellah AitElmouden | Gabriel Abreu |  Jered Ataky | Patrick Maloney"
 date: "2/12/2021"
 output:
-  pdf_document: 
+  html_document:
+    df_print: paged
+  pdf_document:
     latex_engine: xelatex
-    
-  
 ---
 
 ```{r include=FALSE}
