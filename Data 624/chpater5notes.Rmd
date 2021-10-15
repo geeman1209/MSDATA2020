@@ -1,0 +1,261 @@
+---
+title: "Chatper 5 Notes"
+author: "Gabe Abreu"
+date: "9/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(fpp3)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+title: "Data 624 HW 3"
+author: "Gabe Abreu"
+date: "9/24/2021"
+output: 
+    html_document:
+        theme: paper
+        toc: true
+        toc_float: true
+
+## Chapter 5 Notes
+
+#### 5.1
+
+Worflow
+--------
+
+Tidy -> Visualize -> Specify -> Estimate (proceed to Forecast) -> Evaluate -> Repeat cycle (Visualize, Specify, etc.)
+
+
+1. Data Preparation 
+
+-> load data, identify missing values, filter time series, etc.
+
+
+```{r}
+gdppc <- global_economy %>%
+    mutate(GDP_per_capita = GDP/Population)
+```
+
+2. Visualize
+```{r}
+gdppc %>%
+    filter(Country == "Sweden") %>%
+    autoplot(GDP_per_capita) +
+    labs(y="$US", title = "GDP per capita for Sweden")
+```
+
+3. Define a model 
+
+Pick a model (for example, linear trend model)
+
+4. Train the model 
+
+```{r}
+fit <- gdppc %>%
+    model(trend_model = TSLM(GDP_per_capita ~ trend()))
+```
+
+Fits a linear trend model to the GDP per capita data for each combinatino of key variables in the tsibble. The function will fit a model to each of the 263 countries. 
+
+```{r}
+fit
+```
+Evaluate the Model 
+
+Produce forecast
+
+```{r}
+fit %>%
+    forecast(h = "3 years") %>%
+    filter(Country == "Sweden") %>%
+    autoplot(gdppc) +
+    labs(y = "US", title = "GDP per capita for Sweden")
+```
+
+#### 5.2
+
+```{r}
+bricks <- aus_production %>%
+    filter_index("1970 Q1" ~ "2004 Q4")
+```
+Simple Forecasting Methods
+
+```{r}
+bricks %>% model(MEAN(Bricks))
+```
+
+Mean method -- all future values are equal to the average of the historical data
+
+Naive Method -- set all forecasts to be the value of the last observation. Optimal when data follow a random walk. 
+```{r}
+bricks %>% model(NAIVE(Bricks))
+```
+
+
+Seasonal naive method -- set each forecast to be the equal to the last observed value from the same season of the year
+```{r}
+bricks %>% model(SNAIVE(Bricks ~ lag("year")))
+```
+
+
+Example
+------
+```{r}
+# Set training data from 1992 to 2006
+train <- aus_production %>%
+  filter_index("1992 Q1" ~ "2006 Q4")
+# Fit the models
+beer_fit <- train %>%
+  model(
+    Mean = MEAN(Beer),
+    `Naïve` = NAIVE(Beer),
+    `Seasonal naïve` = SNAIVE(Beer)
+  )
+# Generate forecasts for 14 quarters
+beer_fc <- beer_fit %>% forecast(h = 14)
+# Plot forecasts against actual values
+beer_fc %>%
+  autoplot(train, level = NULL) +
+  autolayer(
+    filter_index(aus_production, "2007 Q1" ~ .),
+    colour = "black"
+  ) +
+  labs(
+    y = "Megalitres",
+    title = "Forecasts for quarterly beer production"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+
+```
+
+Drift Method 
+
+A variation on the naive method, allows the forcast to increase or decrease over time, where the amount of change over time (called the drift) is set to be the average change seen in the historical data. 
+
+```{r}
+bricks %>% model(RW(Bricks ~ drift()))
+```
+
+#### 5.3
+Fitted values and residuals 
+----------------------------
+
+fitted values: each observation in a time series can be forecast using all previous observations. 
+
+residuals: left overs after fitting a model. The difference between the observations and the corresponding fitted values.
+
+"innovation residuals" ---> residuals for transformed variables. 
+
+If patterns are observable in the innovation residuals, the model can probably be improved. 
+
+#### 5.4
+
+Residual Diagnostics 
+
+A good forecast will yield innovation residuals with the following properties:
+
+1. innovation residuals are uncorrelated. 
+
+2. innovation results have zero mean. If there is a mean other than zero, forecasts are biased. 
+
+Fixing BIAS
+
+"if the residuals have mean m, subtract m from all forecasts and the bias problem is solved"
+
+3. Innovation residuals should have contant variance, "homoscedasticity"
+4. innovation residuals are normally distributed
+
+Shortcut to produce residual diagnostic graphs:
+
+```{r}
+google_2015 %>%
+  model(NAIVE(Close)) %>%
+  gg_tsresiduals()
+```
+
+
+Portmanteau test: tests for a group of autocorrelations 
+
+Box-Pierce test
+
+Ljung-Box test
+
+```{r}
+aug %>% features(.innov, box_pierce, lag = 10, dof = 0)
+#> # A tibble: 1 × 4
+#>   Symbol .model       bp_stat bp_pvalue
+#>   <chr>  <chr>          <dbl>     <dbl>
+#> 1 GOOG   NAIVE(Close)    7.74     0.654
+
+aug %>% features(.innov, ljung_box, lag = 10, dof = 0)
+#> # A tibble: 1 × 4
+#>   Symbol .model       lb_stat lb_pvalue
+#>   <chr>  <chr>          <dbl>     <dbl>
+#> 1 GOOG   NAIVE(Close)    7.91     0.637
+```
+
+```{r}
+fit <- google_2015 %>% model(RW(Close ~ drift()))
+tidy(fit)
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+fb_fit1 <-train %>% model(MEAN(Close)) %>% forecast(h = 258)
+
+fb_fit2 <-train %>% model(NAIVE(Close)) %>% forecast(h = 258)
+
+fb_fit3 <-train %>% model(RW(Close~drift())) %>% forecast(h = 258)
+                 
+test <- fb_stock %>%
+    filter_index(1001 ~ 1258)
+```
+
+Let's evaluate the forecast accuracy. 
+```{r}
+accuracy(fb_fit1,test)
+
+accuracy(fb_fit2,test)
+
+accuracy(fb_fit3, test)
+```
+
+```{r}  
+  # Set training data from 1992 to 2006
+train <- fb_stock %>%
+  filter_index(0 ~ 1000)
+
+# Fit the models
+fb_fit <- train %>%
+  model(
+    Mean = MEAN(Close),
+    `Naïve` = NAIVE(Close),
+    Drift = RW(Close~drift())
+  )
+# Generate forecasts for 14 quarters
+fb_fc <- fb_fit %>% forecast(h = 258)
+# Plot forecasts against actual values
+fb_fc %>%
+  autoplot(train, level = NULL) +
+  autolayer(
+    filter_index(fb_stock, 1000 ~ .),
+    colour = "black"
+  ) +
+  labs(
+    y = "Closing Price",
+    title = "Forecasts for Facebook Stock Price"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+```

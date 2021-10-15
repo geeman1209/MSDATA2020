@@ -147,6 +147,9 @@ There is overlap, which isn't good for LDA. The model has an accuracy of 85.25% 
 ```{r}
 confusionMatrix(testing$Loan_Status, predicted$class)
 ```
+```{r}
+
+```
 
 ### KNN
 
@@ -166,4 +169,5 @@ Sources:
 https://machinelearningmastery.com/pre-process-your-dataset-in-r/
 https://www.r-bloggers.com/2021/05/linear-discriminant-analysis-in-r/
 https://www.statology.org/confusion-matrix-in-r/
-
+https://www.statology.org/linear-discriminant-analysis-in-r/
+https://statisticsglobe.com/predictive-mean-matching-imputation-method/
