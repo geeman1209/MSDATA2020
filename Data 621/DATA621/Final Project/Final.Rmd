@@ -1,0 +1,760 @@
+---
+title: "Titanic - Machine Learning Kaggle Competition"
+author: "Abdellah AitElmouden | Gabriel Abreu |  Jered Ataky | Patrick Maloney"
+date: "5/11/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+library(corrplot)
+library(tidyverse)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(mice)
+library(gt)
+library(caret)
+library(bnstruct)
+library(VIM)
+library(corrr)
+library(kableExtra)
+library(rpart)
+library(gtsummary)
+library(reshape)
+library(pROC)
+library(randomForest)
+library(pscl)
+library(skimr)
+```
+
+## Abstract
+The purpose of our final project is to enter Kaggle's "Titanic - Machine Learning from Disaster" competition. The goal is to predict as accurately as possible which passengers aboard the Titanic survived the shipwreck. We chose this challenge as our final project because it is the culmination of all the skills and methodologies we learned during this semester. This project will use several techniques for the classification of each passenger as someone who either died or survived, including logistic regression and random forest modeling. A logistic regression model ended up producing the best results, outperforming or random forest models. Our best model received a score of 0.77511
+
+## Background and Challenge Description
+
+"The sinking of the Titanic is one of the most infamous shipwrecks in history.
+
+On April 15, 1912, during her maiden voyage, the widely considered “unsinkable” RMS Titanic sank after colliding with an iceberg. Unfortunately, there weren’t enough lifeboats for everyone onboard, resulting in the death of 1502 out of 2224 passengers and crew.
+
+While there was some element of luck involved in surviving, it seems some groups of people were more likely to survive than others.
+
+In this challenge, we ask you to build a predictive model that answers the question: “what sorts of people were more likely to survive?” using passenger data (i.e. name, age, gender, socio-economic class, etc.)."(https://www.kaggle.com/c/titanic)
+
+## Literature Review
+Below is a list of articles that helped us in determining our approach to this competition.
+
+https://towardsdatascience.com/kaggles-titanic-competition-in-10-minutes-part-i-e6d18e59dbce
+
+https://medium.datadriveninvestor.com/start-with-kaggle-a-comprehensive-guide-to-solve-the-titanic-challenge-8ac5815b0473
+
+https://python.plainenglish.io/what-happened-when-i-used-stacking-on-the-kaggle-titanic-competition-7914b1b02d6c
+
+https://datatricks.co.uk/80-in-kaggles-titanic-competition-in-50-lines-of-r-code
+https://towardsdatascience.com/predicting-titanic-survivors-a-kaggle-competition-625405f5031e
+
+These articles provide a good overview of the current state-of-the-art for solving the Titanic Kaggle
+competition. While several articles describe examples in python, they provide good examples of different
+strategies that can be used even our project will be done in R.  Several of the articles suggest imputation of the
+Age values that are missing, as there are many missing values in this column.
+
+The literature also suggests that feature engineering is also a key to solving this problem. Most of the articles
+mention designing new variables around the title information that can be extracted from the “Name” column.  In
+our case, we decided to go a step further than the literature and classify various types of titles, such as
+military, royal, and others. Some articles in the literature suggested using a decision tree algorithm, but we	opted for logistic regression and random forest.
+	
+## Methodology
+Our methodology consisted of a 5-step process. The data was provided by Kaggle and was pre-separated into
+training and testing sets. The competition called for the “test” dataset to be used for model evaluation. Our process included the following:
+  •	Data Exploration:  summary statistics and simple visualizations were created to search for relationships between the variables.
+
+  •	Data Preparation: null values were imputed and new features were engineered.
+
+  •	Logistic Regression Modeling: A binomial logistic regression model was used as an initial comparison for the following model that was simplified using stepwise regression.
+
+  •	Random Forest Modeling: two different random forest functions were used from different packages to be sure we had the best version.
+
+•	Evaluation: the test data was then cleaned and run through the models and their performance was evaluated. Additional tweaks to the models were made in attempt to improve performance.
+
+**Variable Descriptions**
+
+| Variable | Description                                                          |
+|----------|----------------------------------------------------------------------|
+| survival | Survival (0 = No; 1 = Yes)                                           |
+| pclass   | Passenger Class (1 = 1st; 2 = 2nd; 3 = 3rd)                          |
+| name     | Name                                                                 |
+| sex      | Sex                                                                  |
+| age      | Age                                                                  |
+| sibsp    | Number of Siblings/Spouses Aboard                                    |
+| parch    | Number of Parents/Children Aboard                                    |
+| ticket   | Ticket Number                                                        |
+| fare     | Passenger Fare                                                       |
+| cabin    | Cabin                                                                |
+| embarked | Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton) |
+
+## Experimentation and Results
+
+### Data Exploration
+
+First, we loaded the data and examined the structure. The data has 5 factor, 5 discrete, and 2 continuous variables. There will need to be further exploration to see if any of the columns are missing data.
+
+```{r, include = FALSE}
+train <- read.csv("https://raw.githubusercontent.com/aaitelmouden/DATA621/master/Final%20Project/train.csv", header = TRUE)
+test <- read.csv("https://raw.githubusercontent.com/aaitelmouden/DATA621/master/Final%20Project/test.csv", header = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=True}
+glimpse(train)
+
+```
+
+From the summary above, the first thing that caught my eye is there are NAs, AKA missing values. Before we can make any statistical model, we will need to deal with them first. 
+
+The Cabin column has 687 empty values, imputing that data may not be the best choice since we're filling in more than 50% of the empty values. On the other hand Embarked only has 2 empty values, so we can fill in those empty values without major impact.
+
+#### Visualization
+
+Below are several visualizations to help us see how survivors are distributed amongst certain variables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+train_visual <- train%>%mutate(Survive = case_when(Survived==1~"Survived", Survived==0~"Did Not Survive")) 
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+prop.table(table(train_visual$Survive))
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3), fig}
+train_visual%>%ggplot(aes(Sex,fill=Survive))+geom_bar()
+train_visual%>%ggplot(aes(Embarked,fill=Survive))+geom_bar()+facet_wrap(~Sex)
+train_visual%>%ggplot(aes(Pclass, fill=Survive)) + geom_bar()+facet_wrap(~Sex)
+train_visual%>%ggplot(aes(Age, fill=Survive)) + geom_histogram(binwidth = 2)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+train_visual %>% ggplot(aes(Fare, fill=Survive))+geom_histogram(binwidth = 50)+facet_wrap(Sex~Pclass)
+```
+From the plots above, we can conclude that:
+
+- If a passenger is from upper class, he has a much higher chance to survive than middle or lower class.
+- Female passengers have a better chance to survive than male, which is as expected.
+- The Fare plot suggests that survived people paid more than the deceased. we notice that people paid as high as $500 for the ticket. So I suspect this kind of ticket is group ticket. Family members or friends are likely to buy tickets like these.
+- The distribution of Age variable seems quite similar for different passenger fate. But we know that when the Titanic sank, “women and children first” rule was carried out. This is a very important information for the project, so I will keep Age variable in the model anyway.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+#Create a new column with all the different titles
+train$title <- gsub('(.*, )|(\\..*)', '', train$Name)
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+table(train$Sex, train$title)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+military_title <-c('Capt', 'Col', 'Major')
+royal_title <-c('the Countess', 'Jonkheer', 'Sir', 'Lady')
+the_rest <- c('Dr', 'Don', 'Rev')
+the_master <- c('Master')
+train$title[train$title=='Mlle']<-'Miss'
+train$title[train$title=='Ms']<- 'Miss'
+train$title[train$title=='Mme']<-'Mrs'
+train$title[train$title %in% the_master] <- 'Master'
+train$title[train$title %in% military_title] <- 'Military'
+train$title[train$title %in% royal_title] <- 'Nobility'
+train$title[train$title %in% the_rest] <- 'Other'
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+table(train$Sex, train$title)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+train$title <- as.factor(train$title)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+train_visual$title <- train$title
+train_visual%>%ggplot(aes(title, fill=Survive)) + geom_bar(position = 'fill') + ylab('Frequency')
+```
+
+## Data Preparation
+
+There are three variables with missing or empty values based on our exploration of the data and visualizations: Embark, Cabin, and Age. Only passengers 62 and 830 are missing their embark ports. We randomly assigned them a value of "C". The column Cabin had too many missing values to impute or fill, so we dropped the Cabin column from the training data set.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+train$Embarked[train$Embarked == ""] <- NA
+train[(which(is.na(train$Embarked))), 1]
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+train$Embarked[c(62, 830)] <- 'C'
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+train2 <- subset(train, select = -c(Cabin, PassengerId))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3)}
+aggr(train2, col=c('navyblue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(train2), cex.axis=.7,
+gap=3, ylab=c("Missing data","Pattern"))
+```
+
+From the plot and table, we can see that there are 263 NAs (roughly 20%) in Age variable,  We can see that Age was missing nearly 20% of its values. This data was imputed using the rpart function.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#source: https://cran.r-project.org/web/packages/rpart/vignettes/longintro.pdf
+train3 <- train2
+predicted_age <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + title,
+                       data = train3[!is.na(train3$Age),], method = "anova")
+train3$Age[is.na(train3$Age)] <- predict(predicted_age, train3[is.na(train3$Age),])
+```
+
+
+## Modeling
+
+After exploring the patterns and creating new features, now I will build statistical models to predict the fate of the passengers in the test data set.
+
+Three machine learning methods are used in this project:
+
+- Binomial with logit link function (w/ Imputed data)
+- Stepwise regression
+- Random Forest
+
+
+### Model 1: Binomial with logit link function (w/ Imputed data)
+
+This model is used when the data have binary outcomes.  We fit a generalized linear model (binomial with logit link function) with Pclass, Sex, title, Embarked, Fare, Age, SibSp and Parch, as predictors of the number of survived passenger. we can see that Pclass, Sex, Age and SibSp are all significant variables. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+model1 <- glm(Survived ~ Pclass + Sex + title + Embarked + Fare + Age + SibSp + Parch, family = binomial(link = "logit"), train3)
+summary(model1)
+```
+
+
+### Model 2: Stepwise
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+model2 <- step(model1)
+```
+The AIC listed on the far right is what the model would have if we drop the variable in question. Lower AIC values are still better, The lowest AIC possible, can be selected as the best model
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+summary(model2)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+hist(model2$fitted.values, main="Histogram", xlab="Probabilty of Surviving", col="light green")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+with(model2, cbind(res.deviance = deviance, df = df.residual,  p = pchisq(deviance, df.residual, lower.tail=FALSE)))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+train4 <- train3
+probabilities <- predict(model2, train4, type = "response")
+predicted.classes <- ifelse(probabilities > 0.8, 1, 0)
+train4$pred.class <- predicted.classes
+table("Predictions" = train4$pred.class, "Actual" = train4$Survived)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+a <- confusionMatrix(as.factor(predicted.classes), as.factor(train4$Survived), positive = '1')
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3)}
+curve <- roc(response = train4$Survived, 
+    predictor = predicted.classes, 
+    plot = TRUE, 
+    print.auc = TRUE, 
+    main = "ROC Curve")
+```
+
+
+### Model 3: Random Forest
+
+Random Forest is our favorite machine learning algorithm so far. We will use the randomForest function from the randomForest package.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+set.seed(51)
+model3 <- randomForest(factor(Survived) ~ Pclass + title + Sex + Fare + SibSp + Parch + Age + Embarked, data = train3)
+model3.1 <- train(factor(Survived) ~ Pclass + title + Sex + Fare + SibSp + Parch + Age + Embarked,
+                  data = train3,
+                  method = 'rf',
+                  trControl = trainControl(method = 'cv',
+                                           number = 10))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+model3.1
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+which.min(model3.1$mse)
+```
+The plot below shows the importance of the variables judged by the mean decrease accuracy. A variable is considered the most important if the accuracy of the model without it decreased the most compared to the full model. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3)}
+varImpPlot(model3)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3)}
+plot(model3.1)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+model_tuned <- tuneRF(
+               x=train3[,c(-3, -8)], #define predictor variables
+               y=train3$Survived, #define response variable
+               ntreeTry=500,
+               mtryStart=4, 
+               stepFactor=1.5,
+               improve=0.01,
+               trace=FALSE #don't show real-time progress
+               )
+```
+
+## Test Models
+
+
+The same data cleaning steps were repeated for the test data as the training data.The null values were imputed and the title categories were created
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+test$title <- gsub('(.*, )|(\\..*)', '', test$Name)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+table(test$Sex, test$title)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+military_title <-c('Capt', 'Col', 'Major')
+royal_title <-c('the Countess', 'Jonkheer', 'Sir', 'Lady')
+the_rest <- c('Dr', 'Don', 'Rev', 'Dona')
+the_master <- c('Master')
+test$title[test$title=='Mlle']<-'Miss'
+test$title[test$title=='Ms']<- 'Miss'
+test$title[test$title=='Mme']<-'Mrs'
+test$title[test$title %in% the_master] <- 'Master'
+test$title[test$title %in% military_title] <- 'Military'
+test$title[test$title %in% royal_title] <- 'Nobility'
+test$title[test$title %in% the_rest] <- 'Other'
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+table(test$Sex, test$title)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+test$title <- as.factor(test$title)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+test$Embarked[test$Embarked == ""] <- NA
+test[(which(is.na(test$Embarked))), 1]
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+test2 <- subset(test, select = -c(Cabin, PassengerId))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+aggr(test2, col=c('navyblue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(test2), cex.axis=.7,
+gap=3, ylab=c("Missing data","Pattern"))
+```
+
+Interestingly, Fare is missing values as well as Age in the test dataset. In the training data set, only Age had a significant amount of missing values. We imputed these values in Rpart as well as age.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+test3 <- test2
+predicted_age_test <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + title,
+                       data = test3[!is.na(test3$Age),], method = "anova")
+test3$Age[is.na(test3$Age)] <- predict(predicted_age_test, test3[is.na(test3$Age),])
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+predicted_fare_test <- rpart(Fare ~ Pclass + Sex + SibSp + Parch + Age + Embarked + title,
+                       data = test3[!is.na(test3$Fare),], method = "anova")
+test3$Fare[is.na(test3$Fare)] <- predict(predicted_fare_test, test3[is.na(test3$Fare),])
+```
+
+
+#### Running the Models on the Test Set
+
+
+Because of the nature of Kaggle competitions, the test data we were provided with did not contain a reference column. Thus when we ran our predictions, the predictions were outputed to a new csv file and submitted to Kaggle for grading.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+test4 <- test3
+pred.test2 <- predict(model2, test4, type = "response")
+predtest.classes <- ifelse(pred.test2 > 0.75, 1, 0)
+test4$pred.class <- predtest.classes
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sub1 <- data.frame(test$PassengerId, test4$pred.class)
+colnames(sub1) = c("PassengerId", "Survived")
+```
+
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#source: https://stackoverflow.com/questions/24829674/r-random-forest-error-type-of-predictors-in-new-data-do-not-match
+xtest <- rbind(train3[1,-1], test3)
+xtest <- xtest[-1,]
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+pred.test3.1 <- predict(model3.1, newdata=xtest, type="raw")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sub2 <- data.frame(test$PassengerId, pred.test3.1)
+colnames(sub2) = c("PassengerId", "Survived")
+```
+
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+pred.test3 <- predict(model3, newdata = xtest, type = "response")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sub3 <- data.frame(test$PassengerId, pred.test3)
+colnames(sub3) = c("PassengerId", "Survived")
+```
+
+
+## Select Model
+
+The model with the most accurate result is model 2. Tweaking the thresholds changed final results on kaggle but changing the threshold to 0.75 seemed to be optimal (produced score of 0.77511), while the random forest models produced scores of 0.75358. 
+
+The models might see greater accuracy testing different methods of imputation. The age column saw the greatest amount of missing values, focusing on creating accurate age values will most likely improve the models.
+
+\newpage
+
+## Appendix
+
+```{}
+library(corrplot)
+library(tidyverse)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(mice)
+library(gt)
+library(caret)
+library(bnstruct)
+library(VIM)
+library(corrr)
+library(kableExtra)
+library(rpart)
+library(gtsummary)
+library(reshape)
+library(pROC)
+library(randomForest)
+library(pscl)
+
+
+#Import the training and testing data sets:
+
+train <- read.csv("https://raw.githubusercontent.com/aaitelmouden/DATA621/master/Final%20Project/train.csv", header = TRUE)
+test <- read.csv("https://raw.githubusercontent.com/aaitelmouden/DATA621/master/Final%20Project/test.csv", header = TRUE)
+
+glimpse(train)
+
+summary(train)
+
+
+
+train_visual <- train%>%mutate(Survive = case_when(Survived==1~"Survived", Survived==0~"Did Not Survive")) 
+
+
+# Examine the survival rate for the overall population
+
+prop.table(table(train_visual$Survive))
+
+train_visual%>%ggplot(aes(Sex,fill=Survive))+geom_bar()
+
+
+train_visual%>%ggplot(aes(Embarked,fill=Survive))+geom_bar()+facet_wrap(~Sex)
+
+train_visual%>%ggplot(aes(Pclass, fill=Survive)) + geom_bar()+facet_wrap(~Sex)
+
+train_visual%>%ggplot(aes(Age, fill=Survive)) + geom_histogram(binwidth = 2)
+
+
+train_visual %>% ggplot(aes(Fare, fill=Survive))+geom_histogram(binwidth = 50)+facet_wrap(Sex~Pclass)
+
+#Create a new column with all the different titles
+train$title <- gsub('(.*, )|(\\..*)', '', train$Name)
+
+table(train$Sex, train$title)
+
+
+military_title <-c('Capt', 'Col', 'Major')
+royal_title <-c('the Countess', 'Jonkheer', 'Sir', 'Lady')
+the_rest <- c('Dr', 'Don', 'Rev')
+the_master <- c('Master')
+train$title[train$title=='Mlle']<-'Miss'
+train$title[train$title=='Ms']<- 'Miss'
+train$title[train$title=='Mme']<-'Mrs'
+train$title[train$title %in% the_master] <- 'Master'
+train$title[train$title %in% military_title] <- 'Military'
+train$title[train$title %in% royal_title] <- 'Nobility'
+train$title[train$title %in% the_rest] <- 'Other'
+
+table(train$Sex, train$title)
+
+train$title <- as.factor(train$title)
+
+train_visual$title <- train$title
+train_visual%>%ggplot(aes(title, fill=Survive)) + geom_bar(position = 'fill') + ylab('Frequency')
+
+
+#Localization of the empty values for Embark
+
+train$Embarked[train$Embarked == ""] <- NA
+train[(which(is.na(train$Embarked))), 1]
+
+# Only passengers 62 and 830 are missing their embark ports. We will randomly assign them "C". 
+
+train$Embarked[c(62, 830)] <- 'C'
+
+train2 <- subset(train, select = -c(Cabin, PassengerId))
+
+aggr(train2, col=c('navyblue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(train2), cex.axis=.7,
+gap=3, ylab=c("Missing data","Pattern"))
+
+#We can impute the age date using the rpart function.
+
+#source: https://cran.r-project.org/web/packages/rpart/vignettes/longintro.pdf
+train3 <- train2
+predicted_age <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + title,
+                       data = train3[!is.na(train3$Age),], method = "anova")
+train3$Age[is.na(train3$Age)] <- predict(predicted_age, train3[is.na(train3$Age),])
+
+```
+
+
+
+
+```{}
+
+#### Model 1: Binomial with logit link function (w/ Imputed data)
+
+model1 <- glm(Survived ~ Pclass + Sex + title + Embarked + Fare + Age + SibSp + Parch, family = binomial(link = "logit"), train3)
+summary(model1)
+
+
+## Model 2
+
+model2 <- step(model1)
+
+
+summary(model2)
+
+
+hist(model2$fitted.values, main="Histogram", xlab="Probabilty of Surviving", col="light green")
+
+
+with(model2, cbind(res.deviance = deviance, df = df.residual,  p = pchisq(deviance, df.residual, lower.tail=FALSE)))
+
+train4 <- train3
+probabilities <- predict(model2, train4, type = "response")
+predicted.classes <- ifelse(probabilities > 0.8, 1, 0)
+train4$pred.class <- predicted.classes
+table("Predictions" = train4$pred.class, "Actual" = train4$Survived)
+
+confusionMatrix(as.factor(predicted.classes), as.factor(train4$Survived), positive = '1')
+
+curve <- roc(response = train4$Survived, 
+    predictor = predicted.classes, 
+    plot = TRUE, 
+    print.auc = TRUE, 
+    main = "ROC Curve")
+
+
+#### Model 3: Random Forest
+
+
+
+set.seed(51)
+#model3 <- randomForest(factor(Survived) ~ Pclass + title + Sex + Fare + SibSp + Parch + Age + Embarked, data = train3)
+model3.1 <- train(factor(Survived) ~ Pclass + title + Sex + Fare + SibSp + Parch + Age + Embarked,
+                  data = train3,
+                  method = 'rf',
+                  trControl = trainControl(method = 'cv',
+                                           number = 10))
+
+model3.1
+
+which.min(model3$mse)
+
+varImpPlot(model3)
+
+plot(model3.1)
+
+model_tuned <- tuneRF(
+               x=train3[,c(-3, -8)], #define predictor variables
+               y=train3$Survived, #define response variable
+               ntreeTry=500,
+               mtryStart=4, 
+               stepFactor=1.5,
+               improve=0.01,
+               trace=FALSE #don't show real-time progress
+               )
+
+# Repeating the same data cleaning steps for the test data as the training data.
+
+summary(test)
+
+test$title <- gsub('(.*, )|(\\..*)', '', test$Name)
+
+table(test$Sex, test$title)
+
+military_title <-c('Capt', 'Col', 'Major')
+royal_title <-c('the Countess', 'Jonkheer', 'Sir', 'Lady')
+the_rest <- c('Dr', 'Don', 'Rev', 'Dona')
+the_master <- c('Master')
+test$title[test$title=='Mlle']<-'Miss'
+test$title[test$title=='Ms']<- 'Miss'
+test$title[test$title=='Mme']<-'Mrs'
+test$title[test$title %in% the_master] <- 'Master'
+test$title[test$title %in% military_title] <- 'Military'
+test$title[test$title %in% royal_title] <- 'Nobility'
+test$title[test$title %in% the_rest] <- 'Other'
+
+table(test$Sex, test$title)
+
+test$title <- as.factor(test$title)
+
+
+#Checking for Embarked missing passengers, which there are none.
+
+test$Embarked[test$Embarked == ""] <- NA
+test[(which(is.na(test$Embarked))), 1]
+
+test2 <- subset(test, select = -c(Cabin, PassengerId))
+
+aggr(test2, col=c('navyblue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(test2), cex.axis=.7,
+gap=3, ylab=c("Missing data","Pattern"))
+
+test3 <- test2
+predicted_age_test <- rpart(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked + title,
+                       data = test3[!is.na(test3$Age),], method = "anova")
+test3$Age[is.na(test3$Age)] <- predict(predicted_age_test, test3[is.na(test3$Age),])
+
+predicted_fare_test <- rpart(Fare ~ Pclass + Sex + SibSp + Parch + Age + Embarked + title,
+                       data = test3[!is.na(test3$Fare),], method = "anova")
+test3$Fare[is.na(test3$Fare)] <- predict(predicted_fare_test, test3[is.na(test3$Fare),])
+
+
+#Second Model Predictions
+
+test4 <- test3
+pred.test2 <- predict(model2, test4, type = "response")
+predtest.classes <- ifelse(pred.test2 > 0.75, 1, 0)
+test4$pred.class <- predtest.classes
+
+sub1 <- data.frame(test$PassengerId, test4$pred.class)
+colnames(sub1) = c("PassengerId", "Survived")
+
+
+
+#Third Model Predictions
+
+#source: https://stackoverflow.com/questions/24829674/r-random-forest-error-type-of-predictors-in-new-data-do-not-match
+xtest <- rbind(train3[1,-1], test3)
+xtest <- xtest[-1,]
+
+
+#Random Forest with train method
+
+pred.test3.1 <- predict(model3.1, newdata=xtest, type="raw")
+
+sub2 <- data.frame(test$PassengerId, pred.test3.1)
+colnames(sub2) = c("PassengerId", "Survived")
+
+#Random Forest with randomForest function
+
+pred.test3 <- predict(model3, newdata = xtest, type = "response")
+
+sub3 <- data.frame(test$PassengerId, pred.test3)
+colnames(sub3) = c("PassengerId", "Survived")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
