@@ -1,0 +1,169 @@
+---
+title: "Homework3"
+author: "Gabe Abreu"
+date: "10/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(GGally)
+library(caret)
+library(mice)
+library(tidyverse)
+library(DataExplorer)
+library(MASS)
+library(naniar)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data 622 Homework#3
+
+
+
+### Data Exploration 
+```{r, echo=FALSE}
+loan_data <- read.csv("Loan_approval.csv")
+```
+
+
+
+```{r}
+glimpse(loan_data)
+```
+
+```{r}
+plot_missing(loan_data)
+```
+
+
+The variables Loan_Amount_Term and LoanAmount have a relatively small amount of missing variables which can be imputed. There is an acceptable amount of missing rows for the variable Credit_History. Loan_ID is a prime candidate to eliminate from the data, since there are 614 unique values that are not going to provide additional value to the models we will build. 
+
+
+```{r}
+gg_miss_upset(loan_data)
+```
+
+
+```{r}
+skimr::skim(loan_data)
+```
+
+Let's take a look at the categorical variables in relation to the target variable Loan_Status.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(4,3), fig}
+loan_data%>%ggplot(aes(Gender,fill=Loan_Status))+geom_bar()
+loan_data%>%ggplot(aes(Married,fill=Loan_Status))+geom_bar()
+loan_data%>%ggplot(aes(Dependents,fill=Loan_Status))+geom_bar()
+loan_data%>%ggplot(aes(Education, fill=Loan_Status)) + geom_bar()
+loan_data%>%ggplot(aes(Self_Employed,fill=Loan_Status))+geom_bar()
+loan_data%>%ggplot(aes(Property_Area,fill=Loan_Status))+geom_bar()
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig2.dim=c(4,4), fig2}
+loan_data %>% dplyr::select(ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term, Credit_History, Loan_Status) %>% ggpairs()
+```
+
+### Data Imputation / Variable Selection / Data Partition
+
+There are low levels of correlation among the variables but the variables are clearly skewed and need transformation, especially for LDA. LDA assumes normality, homoscedasticity, low levels of multicollinearity, and independence. 
+
+
+
+First eliminate Loan_ID from the data series. 
+```{r}
+loan_data2 <- loan_data %>% dplyr::select(-Loan_ID)
+```
+
+Impute the data using predictive mean matching for continuous values.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+imp_value <- mice(loan_data2, m = 3, method = "pmm")  
+```
+
+```{r}
+imp_data <- complete(imp_value)
+```
+
+```{r}
+imp_data$Credit_History <- as.factor(imp_data$Credit_History)
+```
+
+```{r}
+preprocess_loan <- preProcess(imp_data, method = c("BoxCox"))
+```
+
+```{r}
+transformed <- predict(preprocess_loan, imp_data)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+transformed %>% dplyr::select(ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term, Credit_History, Loan_Status) %>% ggpairs()
+```
+
+The BoxCox transformation made a difference in the skewness of ApplicantIncome, LoanAmount, and Loan_Amount_Term. coapplicantincome is still right-tailed skewed. The variable Credit History works better as a factor since it is a binary variable. 
+
+
+```{r}
+
+partition <- createDataPartition(transformed$Loan_Status, p = 0.8, list=FALSE)
+
+training <- transformed[partition,]
+testing <- transformed[-partition,]
+```
+
+### LDA 
+
+Fit the model to the data
+```{r}
+ldaModel <- lda(Loan_Status ~., data = training)
+```
+
+```{r}
+ldaModel
+```
+```{r}
+predicted <- predict(ldaModel, testing)
+```
+
+```{r}
+names(predicted)
+```
+
+```{r}
+mean(predicted$class==testing$Loan_Status)
+```
+
+The model correctly predicted the Loan_Status for 85% of the observations in the test data set. 
+
+
+Visualizing the results 
+```{r}
+ldahist(data=predicted$x , g= training$Loan_Status)
+```
+
+There is overlap, which isn't good for LDA. The model has an accuracy of 85.25% but given the overlap perhaps Linear Discrimnant Analysis is not the optimal model. 
+
+
+```{r}
+confusionMatrix(testing$Loan_Status, predicted$class)
+```
+
+### KNN
+
+
+### Decision Tree
+
+
+### Random Forest 
+
+
+### Model Performance 
+
+
+
+Sources:
+
+https://machinelearningmastery.com/pre-process-your-dataset-in-r/
+https://www.r-bloggers.com/2021/05/linear-discriminant-analysis-in-r/
+https://www.statology.org/confusion-matrix-in-r/
+
