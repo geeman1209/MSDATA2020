@@ -1,0 +1,285 @@
+***Appendix***
+import mplfinance as mpf
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import plotly.graph_objects as go
+import ta
+import lightgbm as lgb
+from lightgbm import LGBMClassifier
+
+from scipy import stats
+from statsmodels.graphics.tsaplots import plot_acf
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
+from sklearn import metrics
+from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix
+
+five_min_data = pd.read_csv("BTC_continuous_adjusted_5min.txt", header = None)
+five_min_data.columns = ['time','high','low','open','close','volume']
+five_min_data.set_index(['time'], inplace=True, append=True, drop=True)
+five_min_data.reset_index(level=0, drop=True, inplace=True)
+five_min_data.head()
+
+continuous_history = five_min_data.loc['2021-1-1':'2021-12-31']
+continuous_history.head()
+continuous_history.info()
+
+#Find missing data
+missing = continuous_history.isnull()
+print(missing.describe())
+fframe = continuous_history.copy()
+
+fframe.describe()
+
+#Add different indicators to the dataframe using a mix of 'manual' math and utilizing the ta library (technical analysis)
+def applyindicators(df):
+    df['EMA21'] = ta.trend.ema_indicator(df.close,21)
+    df['SMA_20'] = df.close.rolling(20).mean()
+    df['stddev'] = df.close.rolling(20).std()
+    df['Upper'] = df.SMA_20 + df.stddev * 2 #Calculate top band
+    df['Lower'] = df.SMA_20 - df.stddev * 2 #Calculate lower band
+    df['rsi'] = ta.momentum.rsi(df.close, 2)
+    df['VWAP'] = ta.volume.volume_weighted_average_price(df.high,df.low,df.close,df.volume)
+    df['Stoch'] = ta.momentum.stoch(df.high, df.low, df.close, 14, 3)
+    df['MACD'] =  ta.trend.macd(df.close,26,12)
+    df['MACDEMA'] = ta.trend.macd_signal(df.close, 26, 12, 9)
+    df['ATR'] = ta.volatility.average_true_range(df.high, df.low, df.close, 14)
+    df['OBV'] = ta.volume.on_balance_volume(df.close, df.volume)
+    
+applyindicators(fframe)
+
+#Calculate Returns and assign a 'sign' to the returns
+fframe["Returns"] = fframe.close.pct_change(periods=1)
+fframe["Up_Down"] = np.sign(fframe["Returns"])
+fframe.loc[fframe['Up_Down'] == 0.0] = 1.0
+
+plt.style.use("fivethirtyeight")
+plt.figure(figsize=(8,6))
+plt.title( 'Price History')
+plt.xlabel("Time")
+plt.ylabel("Price")
+plt.plot(fframe.tail(1000)['close'])
+
+sns.barplot(data=fframe.tail(500), x="close", y="volume")
+sns.barplot(data=fframe.tail(500), x="Returns", y="volume")
+
+viz_frame = fframe.drop(columns='Up_Down').copy()
+viz_frame.hist(bins=50, figsize=(20,15))
+plt.show()
+
+df_corr = fframe.drop(columns=['Up_Down']).corr().round(2)
+fig, ax = plt.subplots(figsize=(12,12))
+ax = sns.heatmap(df_corr, vmin=-.8, vmax=.8, square=1, annot=True)
+
+BBPlot = fframe.tail(250)[['close', 'SMA_20', 'Upper', 'Lower']].plot()
+BBPlot.set_title("Bollinger Bands")
+BBPlot.set_ylabel("Price")
+
+VWAPlot = fframe.tail(250)[['close', 'VWAP']].plot()
+VWAPlot.set_title("VWAP")
+VWAPlot.set_ylabel("Price")
+
+SEMAPlot = fframe.tail(250)[['close','EMA21','SMA_20']].plot()
+SEMAPlot.set_title("Moving Averages")
+SEMAPlot.set_ylabel("Price")
+
+#The random forest classifier would not run with the NA values 
+fframe2 = fframe.dropna().copy()
+
+#Define our x and y columns 
+YCol = fframe2['Up_Down'].copy()
+XCols = fframe2.drop(columns=['Up_Down', 'Returns'])
+
+#Split X and y into training and testing set
+X_train, X_test, y_train, y_test = train_test_split(XCols, YCol, random_state=0)
+
+#Create a Random Forest Classifier 
+rfc = RandomForestClassifier(n_estimators = 100, oob_score = True, criterion = 'gini', random_state=0)
+
+#Fit the data into the model
+rfc.fit(X_train, y_train)
+
+#Predictions!
+y_pred = rfc.predict(X_test)
+y_proba = rfc.predict_proba(X_test)
+
+#Print Accuracy Score
+print('Correct Prediction (%):', accuracy_score(y_test, rfc.predict(X_test), normalize=True) * 100)
+
+rfmatrix = confusion_matrix(y_test, y_pred)
+
+tru_neg = rfmatrix[0][0]
+false_neg = rfmatrix[1][0]
+tru_pos = rfmatrix[1][1]
+false_pos = rfmatrix[0][1]
+
+accuracy = (tru_neg+ tru_pos) / (tru_neg + tru_pos + false_neg + false_pos)
+precision = tru_pos / (tru_pos + false_pos)
+recall = tru_pos / (tru_pos + false_neg)
+specificity = tru_neg / (tru_neg + false_pos)
+
+print('Accuracy: {}'.format(float(accuracy)))
+print('Precision: {}'.format(float(precision)))
+print('Recall: {}'.format(float(recall)))
+print('Specificity: {}'.format(float(specificity)))
+
+disp = plot_confusion_matrix(rfc, X_test, y_test, display_labels = ['Down Day', 'Up Day'], normalize = 'true', cmap=plt.cm.Blues)
+disp.ax_.set_title('Confusion Matrix - Normalized')
+plt.show()
+
+feature_importance = pd.Series(rfc.feature_importances_, index=XCols.columns).sort_values(ascending=False)
+fig = feature_importance.plot.bar()
+
+#Drop features that hold little importance based on the previous model and high correlation levels
+fframe3 = fframe2.copy()
+fframe3 = fframe3.drop(columns=['high','close','open','low', 'EMA21'])
+
+#Define our x and y columns 
+YCol2 = fframe3['Up_Down'].copy()
+XCols2 = fframe3.drop(columns=['Up_Down', 'Returns'])
+
+#Split X and y into training and testing set
+X_train, X_test, y_train, y_test = train_test_split(XCols2, YCol2, random_state=0)
+
+LightModel = lgb.LGBMClassifier(learning_rate=0.09, max_depth=-5,random_state=42)
+LightModel.fit(X_train, y_train,eval_set=[(X_test,y_test),(X_train, y_train)],
+              verbose=20,eval_metric='logloss')
+
+print('Training accuracy {:.4f}'.format(LightModel.score(X_train,y_train)))
+print('Testing accuracy {:.4f}'.format(LightModel.score(X_test,y_test)))
+
+lgb.plot_importance(LightModel)
+
+lgb.plot_metric(LightModel)
+
+metrics.plot_confusion_matrix(LightModel, X_test, y_test, cmap='Blues_r')
+
+lgb.plot_tree(LightModel)
+
+#Define grid parameters
+parameters = {'num_leaves':[20,40,60,80,100],
+              'min_child_samples':[5,10,15],
+              'max_depth':[-1,5,10,20],
+              'learning_rate':[0.05,0.1,0.2],
+              'reg_alpha':[0,0.1,0.03]}
+
+from sklearn.model_selection import RandomizedSearchCV
+lgb1=lgb.LGBMClassifier()
+LightRandom=RandomizedSearchCV(lgb1,parameters,scoring='accuracy',n_iter=100)
+LightRandom.fit(X=X_train, y=y_train)
+print(LightRandom.best_params_)
+predicted=LightRandom.predict(X_test)
+print(accuracy_score(y_test, predicted))
+
+
+-----------------------QuantConnect API Code------------------------------------------------
+
+import ta
+import joblib
+from sklearn.ensemble import RandomForestClassifier
+import lightgbm as lgb
+from lightgbm import LGBMClassifier
+
+class FocusedBlueBear(QCAlgorithm):
+
+    def Initialize(self):
+        self.SetStartDate(2019, 1, 1)  # Set Start Date
+        self.SetEndDate(2020,1,1) #Set End Date
+        self.SetCash(50000)  # Set Strategy Cash
+        
+        self.new_day = True
+        self.contract = None #object to store a specific futures contract
+        
+        model_key = "LightGBM_Model"
+        file_name = self.ObjectStore.GetFilePath(model_key)
+        self.loaded_model = joblib.load(file_name)
+        
+        futuresBTC = self.AddFuture(Futures.Currencies.BTC, Resolution.Minute)
+        futuresBTC.SetFilter(TimeSpan.FromDays(30), TimeSpan.FromDays(720))
+        
+        self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
+        self.symbol = self.AddFuture(Futures.Currencies.BTC, Resolution.Minute).Symbol
+        self.SetBenchmark(self.symbol)
+
+    
+    def OnData(self, slice):
+        
+        self.InitUpdateContract(slice)
+
+   
+    def InitUpdateContract(self, slice):
+        if not self.new_day:
+           return
+       
+        if self.contract != None and (self.contract.Expiry - self.Time).days >= 3:
+           return
+
+        for chain in slice.FutureChains.Values:
+            if self.contract != None:
+                   self.Log('Expiry days away {} - {}'.format((self.contract.Expiry-self.Time).days, self.contract.Expiry))
+                
+                    # Reset any open positions based on a contract rollover.
+                   self.Log('RESET: closing all positions')
+                   self.Liquidate()
+                  
+            #get list of contracts
+            contracts = list(chain.Contracts.Values)
+            chain_contracts = list(contracts)
+            #order the contracts by newest contact to oldest
+            chain_contracts = sorted(chain_contracts, key=lambda x: x.Expiry)
+            
+            #select contract
+            self.contract = chain_contracts[1]
+            self.Log("Setting contract to: {}".format(self.contract.Symbol.Value))
+            
+            #Set Up Consolidated Bars
+            #self.Consolidate(self.symbol, timedelta(minutes=5), self.FiveMinuteBarHandler)
+            #five_mins = TradeBarConsolidator(TimeSpan.FromMinutes(5))
+            #five_mins.DataConsolidated
+            
+            #self.SubscriptionManager.AddConsolidator(self.contract.Symbol, five_mins)
+            
+            history = self.History(self.contract.Symbol, timedelta(5), Resolution.Minute)
+            if self.GetPrediction(history) == "Up":
+                self.SetHoldings(self.contract.Symbol, 1)
+            else:
+                self.SetHoldings(self.contract.Symbol, -1)
+            #if self.GetPrediction(history) == "Down":
+                #self.SetHoldings(self.contract.Symbol, -1)
+            
+            
+    def GetPrediction(self, df):
+            df.reset_index(level = 0, drop = True, inplace=True)
+            df.reset_index(level = 0, drop = True, inplace=True)
+            df.dropna()
+            self.applyindicators(df)
+            df = df[['Stoch','rsi','stddev','MACD','volume','MACDEMA','ATR','OBV','bidhigh','asksize','bidsize','Upper',
+            'EMA21','Lower','SMA_20','VWAP']]
+            if(self.loaded_model.predict(df)[0]) == -1:
+                return "Down"
+            else:
+                return "Up"
+       
+    def applyindicators(self, df):
+        df['EMA21'] = ta.trend.ema_indicator(df.close,21)
+        df['SMA_20'] = df.close.rolling(20).mean()
+        df['stddev'] = df.close.rolling(20).std()
+        df['Upper'] = df.SMA_20 + df.stddev * 2 #Calculate top band
+        df['Lower'] = df.SMA_20 - df.stddev * 2 #Calculate lower band
+        df['rsi'] = ta.momentum.rsi(df.close, 2)
+        df['VWAP'] = ta.volume.volume_weighted_average_price(df.high,df.low,df.close,df.volume)
+        df['Stoch'] = ta.momentum.stoch(df.high, df.low, df.close, 14, 3)
+        df['MACD'] =  ta.trend.macd(df.close,26,12)
+        df['MACDEMA'] = ta.trend.macd_signal(df.close, 26, 12, 9)
+        df['ATR'] = ta.volatility.average_true_range(df.high, df.low, df.close, 14)
+        df['OBV'] = ta.volume.on_balance_volume(df.close, df.volume)
+       
+   
+    def OnEndofDay(self):
+       self.new_day = True
